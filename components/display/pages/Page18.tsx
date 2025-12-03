@@ -1,0 +1,304 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
+
+interface Note {
+  osc: OscillatorNode;
+  gain: GainNode;
+  decayEnd: number;
+}
+
+export default function Page18() {
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const activeNotesRef = useRef<Record<string, Note>>({});
+  const pressTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const noteFrequencies: Record<string, number> = {
+    F4: 349.23,
+    G4: 392.0,
+    A4: 440.0,
+    Bb4: 466.16,
+    C5: 523.25,
+    D5: 587.33,
+    E5: 659.25,
+    F5: 698.46,
+  };
+
+  const keys = [
+    { note: 'F5', syllable: 'Fa', color: '#7AC143' },
+    { note: 'E5', syllable: 'Mi', color: '#F8A5C2' },
+    { note: 'D5', syllable: 'Re', color: '#9CCF4D' },
+    { note: 'C5', syllable: 'Do', color: '#FFDB5C' },
+    { note: 'Bb4', syllable: 'Ti', color: '#F99B45' },
+    { note: 'A4', syllable: 'La', color: '#B88AE8' },
+    { note: 'G4', syllable: 'So', color: '#6FB3D9' },
+    { note: 'F4', syllable: 'Fa', color: '#5BA3D0' },
+  ];
+
+  const initAudio = () => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+  };
+
+  const playNote = (note: string, isLongPress = false): Note | null => {
+    if (!audioContextRef.current) return null;
+
+    const freq = noteFrequencies[note];
+    if (!freq) return null;
+
+    const oscMain = audioContextRef.current.createOscillator();
+    const real = new Float32Array([0, 1, 0.2, 0.08, 0.03]);
+    const imag = new Float32Array(real.length);
+    const wave = audioContextRef.current.createPeriodicWave(real, imag);
+    oscMain.setPeriodicWave(wave);
+    oscMain.frequency.value = freq;
+
+    const gain = audioContextRef.current.createGain();
+    gain.gain.setValueAtTime(0, audioContextRef.current.currentTime);
+    gain.gain.linearRampToValueAtTime(0.5, audioContextRef.current.currentTime + 0.03);
+    gain.gain.linearRampToValueAtTime(0.45, audioContextRef.current.currentTime + 0.1);
+    const decayEnd = audioContextRef.current.currentTime + (isLongPress ? 8 : 3);
+    gain.gain.exponentialRampToValueAtTime(0.001, decayEnd);
+
+    oscMain.connect(gain);
+    gain.connect(audioContextRef.current.destination);
+
+    oscMain.start();
+    oscMain.stop(decayEnd + 0.1);
+    return { osc: oscMain, gain, decayEnd };
+  };
+
+  const createFloatingNote = (keyElement: HTMLElement, color: string) => {
+    if (!containerRef.current) return;
+
+    const note = document.createElement('div');
+    note.style.position = 'absolute';
+    note.style.fontSize = '2rem';
+    note.style.color = color;
+    note.style.pointerEvents = 'none';
+    note.style.zIndex = '50';
+    note.style.fontWeight = 'bold';
+    note.style.textShadow = '1px 1px 2px rgba(255, 255, 255, 0.8)';
+    note.style.animation = 'floatUp 1.5s ease-out forwards';
+    note.innerText = ['♪', '♫', '♩', '♬'][Math.floor(Math.random() * 4)];
+
+    const rect = keyElement.getBoundingClientRect();
+    const containerRect = containerRef.current.getBoundingClientRect();
+
+    note.style.left = (rect.left - containerRect.left + rect.width / 2 - 10) + 'px';
+    note.style.top = (rect.top - containerRect.top - 20) + 'px';
+
+    containerRef.current.appendChild(note);
+
+    setTimeout(() => {
+      note.remove();
+    }, 1500);
+  };
+
+  const triggerNoteStart = (note: string, keyElement: HTMLElement, color: string) => {
+    initAudio();
+
+    if (!activeNotesRef.current[note]) {
+      const noteObj = playNote(note, false);
+      if (noteObj) {
+        activeNotesRef.current[note] = noteObj;
+        keyElement.classList.add('active');
+        createFloatingNote(keyElement, color);
+      }
+    }
+  };
+
+  const triggerNoteEnd = (note: string, keyElement: HTMLElement) => {
+    if (activeNotesRef.current[note]) {
+      const { gain, decayEnd } = activeNotesRef.current[note];
+      if (gain && audioContextRef.current) {
+        gain.gain.cancelScheduledValues(audioContextRef.current.currentTime);
+        gain.gain.setValueAtTime(gain.gain.value, audioContextRef.current.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioContextRef.current.currentTime + 0.3);
+      }
+      delete activeNotesRef.current[note];
+      keyElement.classList.remove('active');
+    }
+  };
+
+
+  useEffect(() => {
+    return () => {
+      Object.values(activeNotesRef.current).forEach((note) => {
+        try {
+          note.osc.stop();
+        } catch (e) {
+          // Ignore
+        }
+      });
+    };
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        backgroundImage: 'url(/assets/images/page-18.png)',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <style>{`
+        @keyframes floatUp {
+          0% {
+            transform: translateY(0) scale(0.5) rotate(0deg);
+            opacity: 0;
+          }
+          20% {
+            transform: translateY(-20px) scale(1.2) rotate(-10deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-100px) scale(1) rotate(10deg);
+            opacity: 0;
+          }
+        }
+        .piano-key {
+          flex: 1;
+          width: 100%;
+          margin: 0;
+          background: transparent;
+          border: none;
+          border-radius: 2px;
+          cursor: pointer;
+          position: relative;
+          transition: all 0.15s ease;
+          display: flex;
+          flex-direction: row;
+          justify-content: flex-start;
+          align-items: center;
+          padding: 0;
+          opacity: 0;
+          font-size: 1.2rem;
+          min-height: 0;
+        }
+        .piano-key:nth-child(1) { width: 100%; }
+        .piano-key:nth-child(2) { width: 100%; }
+        .piano-key:nth-child(3) { width: 100%; }
+        .piano-key:nth-child(4) { width: 100%; }
+        .piano-key:nth-child(5) { width: 100%; }
+        .piano-key:nth-child(6) { width: 100%; }
+        .piano-key:nth-child(7) { width: 100%; }
+        .piano-key:nth-child(8) { width: 100%; }
+        .piano-key:hover {
+          opacity: 0.25;
+          background: rgba(255, 255, 255, 0.35);
+        }
+        .piano-key:active,
+        .piano-key.active {
+          opacity: 0.4;
+          background: rgba(255, 255, 255, 0.6);
+          transform: scale(0.98);
+        }
+        .syllable {
+          font-size: 0;
+          font-weight: bold;
+          color: transparent;
+          pointer-events: none;
+        }
+      `}</style>
+
+      {/* 钢琴键盘容器 */}
+      <div
+        style={{
+          position: 'absolute',
+          right: '13%',
+          top: '54%',
+          transform: 'translateY(-50%)',
+          width: '10%',
+          height: '54%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: '1.4%',
+          padding: 0,
+        }}
+      >
+        {keys.map((key, index) => (
+          <div
+            key={key.note}
+            className="piano-key"
+            data-note={key.note}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const pressStart = Date.now();
+              const timer = setTimeout(() => {
+                if (activeNotesRef.current[key.note]) {
+                  const { gain, decayEnd } = activeNotesRef.current[key.note];
+                  if (gain && audioContextRef.current) {
+                    gain.gain.cancelScheduledValues(audioContextRef.current.currentTime);
+                    gain.gain.setValueAtTime(gain.gain.value, audioContextRef.current.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 8);
+                    activeNotesRef.current[key.note].decayEnd = audioContextRef.current.currentTime + 8;
+                  }
+                }
+              }, 1000);
+              pressTimersRef.current[key.note] = timer;
+              triggerNoteStart(key.note, e.currentTarget, key.color);
+            }}
+            onMouseUp={(e) => {
+              e.preventDefault();
+              if (pressTimersRef.current[key.note]) {
+                clearTimeout(pressTimersRef.current[key.note]);
+                delete pressTimersRef.current[key.note];
+              }
+              triggerNoteEnd(key.note, e.currentTarget);
+            }}
+            onMouseLeave={(e) => {
+              e.preventDefault();
+              if (pressTimersRef.current[key.note]) {
+                clearTimeout(pressTimersRef.current[key.note]);
+                delete pressTimersRef.current[key.note];
+              }
+              triggerNoteEnd(key.note, e.currentTarget);
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              const pressStart = Date.now();
+              const timer = setTimeout(() => {
+                if (activeNotesRef.current[key.note]) {
+                  const { gain, decayEnd } = activeNotesRef.current[key.note];
+                  if (gain && audioContextRef.current) {
+                    gain.gain.cancelScheduledValues(audioContextRef.current.currentTime);
+                    gain.gain.setValueAtTime(gain.gain.value, audioContextRef.current.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 8);
+                    activeNotesRef.current[key.note].decayEnd = audioContextRef.current.currentTime + 8;
+                  }
+                }
+              }, 1000);
+              pressTimersRef.current[key.note] = timer;
+              triggerNoteStart(key.note, e.currentTarget, key.color);
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              if (pressTimersRef.current[key.note]) {
+                clearTimeout(pressTimersRef.current[key.note]);
+                delete pressTimersRef.current[key.note];
+              }
+              triggerNoteEnd(key.note, e.currentTarget);
+            }}
+          >
+            <span className="syllable">{key.syllable}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
