@@ -16,7 +16,7 @@ export default function Page20() {
   const hasInitialized = useRef(false);
   const playerReadyRef = useRef(false);
   const videoPlayerReadyRef = useRef(false);
-  
+
   // 音频波形相关
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -25,14 +25,104 @@ export default function Page20() {
   const animationFrameRef = useRef<number | null>(null);
   const isRecordingRef = useRef(false); // 是否正在记录
   const recordedWaveformDataRef = useRef<Uint8Array[]>([]); // 存储记录的波形数据
-  const referenceWaveformDataRef = useRef<number[]>([]); // 存储对比波形（基准波形）数据
+  const referenceWaveformDataRef = useRef<number[]>([]); // 存储基准波形数据（从视频音频提取）
   const isShowingRecordedRef = useRef(false); // 是否正在显示记录的波形
   const [showVideo, setShowVideo] = useState(false); // 控制是否显示视频（用于触发重新渲染）
 
-  // 第二十页加载时，确保为暂停状态（不自动播放）- 只运行一次
+
+  // 从视频音频提取基准波形数据
+  const extractReferenceWaveform = useCallback(async () => {
+    const draw = () => {
+      if (!canvasRef.current) return;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // 如果正在录音或显示录音结果，不绘制基准波形
+      if (isRecordingRef.current || isShowingRecordedRef.current) {
+        return;
+      }
+
+      // 清空画布并填充纯色背景
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 绘制基准波形
+      if (referenceWaveformDataRef.current.length > 0) {
+        const refData = referenceWaveformDataRef.current;
+        const maxFrames = Math.min(refData.length, canvas.width);
+        const stepX = canvas.width / maxFrames;
+        const maxBarHeight = canvas.height;
+
+        ctx.strokeStyle = 'rgba(0, 150, 255, 0.8)'; // 半透明蓝色
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        for (let i = 0; i < maxFrames; i++) {
+          const refIndex = i;
+          if (refIndex >= refData.length) break;
+
+          const refValue = refData[refIndex];
+          const y = canvas.height - (refValue / 255) * maxBarHeight;
+          const x = i * stepX;
+
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            // 使用二次贝塞尔曲线让线条更平滑
+            const prevX = (i - 1) * stepX;
+            const prevY = canvas.height - (refData[i - 1] / 255) * maxBarHeight;
+            const cpX = (prevX + x) / 2;
+            ctx.quadraticCurveTo(cpX, prevY, x, y);
+          }
+        }
+        ctx.stroke();
+      }
+    };
+
+    try {
+      const response = await fetch('/assets/videos/page-20-video.mp4');
+      const arrayBuffer = await response.arrayBuffer();
+
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+      const rawData = audioBuffer.getChannelData(0); // Get first channel
+      const sampleRate = audioBuffer.sampleRate;
+      const samplesPerFrame = Math.floor(sampleRate / 60); // Approx 60 FPS
+      const totalFrames = Math.ceil(rawData.length / samplesPerFrame);
+
+      const referenceData: number[] = [];
+
+      for (let i = 0; i < totalFrames; i++) {
+        const start = i * samplesPerFrame;
+        const end = Math.min(start + samplesPerFrame, rawData.length);
+        let max = 0;
+        for (let j = start; j < end; j++) {
+          const abs = Math.abs(rawData[j]);
+          if (abs > max) max = abs;
+        }
+        // Scale to 0-255
+        referenceData.push(Math.min(255, Math.floor(max * 255)));
+      }
+
+      referenceWaveformDataRef.current = referenceData;
+      console.log('基准波形数据提取完成，共', referenceData.length, '帧');
+
+      draw();
+
+      audioContext.close();
+    } catch (error) {
+      console.error('提取基准波形失败:', error);
+    }
+  }, []);
+
+
+
+  // 第二十页加载时，确保为暂停状态（不自动播放）并提取基准波形 - 只运行一次
   useEffect(() => {
     if (hasInitialized.current) return;
-    
+
     const currentState = usePresentationStore.getState();
     if (currentState.isPlaying) {
       setState({
@@ -40,6 +130,13 @@ export default function Page20() {
         isPlaying: false,
       });
     }
+
+    // 等待一小段时间确保 video 元素已挂载并设置了 src
+    setTimeout(() => {
+      // 提取基准波形数据
+      extractReferenceWaveform();
+    }, 200);
+
     hasInitialized.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 空依赖数组，只在组件挂载时运行一次
@@ -102,6 +199,56 @@ export default function Page20() {
     }
   };
 
+  // 绘制基准波形（仅在页面加载后显示）
+  const drawReferenceWaveform = useCallback(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // 如果正在录音或显示录音结果，不绘制基准波形
+    if (isRecordingRef.current || isShowingRecordedRef.current) {
+      return;
+    }
+
+    // 清空画布并填充纯色背景
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 绘制基准波形
+    if (referenceWaveformDataRef.current.length > 0) {
+      const refData = referenceWaveformDataRef.current;
+      const maxFrames = Math.min(refData.length, canvas.width);
+      const stepX = canvas.width / maxFrames;
+      const maxBarHeight = canvas.height;
+
+      ctx.strokeStyle = 'rgba(0, 150, 255, 0.8)'; // 半透明蓝色
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+
+      for (let i = 0; i < maxFrames; i++) {
+        const refIndex = i;
+        if (refIndex >= refData.length) break;
+
+        const refValue = refData[refIndex];
+        const y = canvas.height - (refValue / 255) * maxBarHeight;
+        const x = i * stepX;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          // 使用二次贝塞尔曲线让线条更平滑
+          const prevX = (i - 1) * stepX;
+          const prevY = canvas.height - (refData[i - 1] / 255) * maxBarHeight;
+          const cpX = (prevX + x) / 2;
+          ctx.quadraticCurveTo(cpX, prevY, x, y);
+        }
+      }
+      ctx.stroke();
+    }
+  }, []);
+
   // 绘制波形函数
   const drawWaveform = useCallback(() => {
     if (!canvasRef.current || !analyserRef.current) return;
@@ -117,52 +264,82 @@ export default function Page20() {
     const draw = () => {
       animationFrameRef.current = requestAnimationFrame(draw);
 
-      // 如果正在显示记录的波形，绘制记录的波形和对比波形
+      // 如果正在显示记录的波形，绘制记录的波形和基准波形（趋势曲线）
       if (isShowingRecordedRef.current && recordedWaveformDataRef.current.length > 0) {
-        // 清空画布
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        // 清空画布并填充纯色背景
+        ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         const recordedData = recordedWaveformDataRef.current;
-        const maxFrames = Math.min(recordedData.length, canvas.width); // 限制显示的帧数
-        const startIndex = Math.max(0, recordedData.length - maxFrames); // 如果帧数太多，从后面开始显示
-        const barWidth = canvas.width / maxFrames;
         const maxBarHeight = canvas.height;
 
-        // 先绘制对比波形（基准波形）- 使用半透明蓝色
+        // 先绘制基准波形（从视频音频提取）- 使用半透明蓝色曲线
+        // 基准波形始终显示完整曲线，位置固定不变
         if (referenceWaveformDataRef.current.length > 0) {
-          ctx.fillStyle = 'rgba(0, 150, 255, 0.6)'; // 半透明蓝色
+          ctx.strokeStyle = 'rgba(0, 150, 255, 0.8)'; // 半透明蓝色
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+
           const refData = referenceWaveformDataRef.current;
-          const refMaxFrames = Math.min(refData.length, maxFrames);
-          const refStartIndex = Math.max(0, refData.length - refMaxFrames);
+          // 基准波形始终显示完整曲线，使用固定的缩放比例
+          const refMaxFrames = Math.min(refData.length, canvas.width);
+          const refStepX = canvas.width / refMaxFrames;
 
           for (let i = 0; i < refMaxFrames; i++) {
-            const refIndex = refStartIndex + i;
-            if (refIndex >= refData.length) break;
-            
-            const refValue = refData[refIndex];
-            const refBarHeight = (refValue / 255) * maxBarHeight;
+            if (i >= refData.length) break;
 
-            // 从底部绘制对比波形
-            ctx.fillRect(i * barWidth, canvas.height - refBarHeight, Math.max(1, barWidth), refBarHeight);
+            const refValue = refData[i];
+            const y = canvas.height - (refValue / 255) * maxBarHeight;
+            const x = i * refStepX;
+
+            if (i === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              // 使用二次贝塞尔曲线让线条更平滑
+              const prevX = (i - 1) * refStepX;
+              const prevY = canvas.height - (refData[i - 1] / 255) * maxBarHeight;
+              const cpX = (prevX + x) / 2;
+              ctx.quadraticCurveTo(cpX, prevY, x, y);
+            }
           }
+          ctx.stroke();
         }
 
-        // 再绘制实际记录的波形 - 使用绿色
-        ctx.fillStyle = '#00ff00'; // 绿色波形
+        // 再绘制实际记录的波形 - 使用绿色曲线
+        // 记录波形使用与基准波形相同的缩放比例，确保时间轴对齐
+        ctx.strokeStyle = '#00ff00'; // 绿色波形
+        ctx.lineWidth = 2;
+        ctx.beginPath();
 
-        for (let i = 0; i < maxFrames; i++) {
-          const frameIndex = startIndex + i;
-          if (frameIndex >= recordedData.length) break;
-          
-          const frameData = recordedData[frameIndex];
+        const refData = referenceWaveformDataRef.current;
+        const refMaxFrames = Math.min(refData.length, canvas.width);
+        const refStepX = canvas.width / refMaxFrames;
+
+        // 只绘制已记录的部分
+        for (let i = 0; i < recordedData.length && i < refMaxFrames; i++) {
+          const frameData = recordedData[i];
           // 使用最大值来显示波形，更明显
           const maxValue = Math.max(...Array.from(frameData));
-          const barHeight = (maxValue / 255) * maxBarHeight;
+          const y = canvas.height - (maxValue / 255) * maxBarHeight;
+          const x = i * refStepX;
 
-          // 从底部绘制实际波形
-          ctx.fillRect(i * barWidth, canvas.height - barHeight, Math.max(1, barWidth), barHeight);
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            // 使用二次贝塞尔曲线让线条更平滑
+            if (i - 1 >= 0 && i - 1 < recordedData.length) {
+              const prevFrameData = recordedData[i - 1];
+              const prevMaxValue = Math.max(...Array.from(prevFrameData));
+              const prevY = canvas.height - (prevMaxValue / 255) * maxBarHeight;
+              const prevX = (i - 1) * refStepX;
+              const cpX = (prevX + x) / 2;
+              ctx.quadraticCurveTo(cpX, prevY, x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          }
         }
+        ctx.stroke();
       } else if (analyserRef.current) {
         // 实时绘制波形
         analyser.getByteFrequencyData(dataArray);
@@ -174,28 +351,104 @@ export default function Page20() {
           recordedWaveformDataRef.current.push(frameData);
         }
 
-        // 清空画布
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        // 清空画布并填充纯色背景
+        ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // 绘制波形
-        const barWidth = (canvas.width / bufferLength) * 2.5;
-        let barHeight;
-        let x = 0;
+        // 如果正在录音，绘制趋势曲线（实时收音曲线 + 基准曲线）
+        if (isRecordingRef.current && recordedWaveformDataRef.current.length > 0) {
+          const recordedData = recordedWaveformDataRef.current;
+          const maxBarHeight = canvas.height;
 
-        ctx.fillStyle = isRecordingRef.current ? '#ff0000' : '#00ff00'; // 记录时显示红色，否则绿色
+          // 先绘制基准波形（从视频音频提取）- 使用半透明蓝色曲线
+          // 基准波形始终显示完整曲线，位置固定不变
+          if (referenceWaveformDataRef.current.length > 0) {
+            ctx.strokeStyle = 'rgba(0, 150, 255, 0.8)'; // 半透明蓝色
+            ctx.lineWidth = 2;
+            ctx.beginPath();
 
-        for (let i = 0; i < bufferLength; i++) {
-          barHeight = (dataArray[i] / 255) * canvas.height;
+            const refData = referenceWaveformDataRef.current;
+            // 基准波形始终显示完整曲线，使用固定的缩放比例
+            const refMaxFrames = Math.min(refData.length, canvas.width);
+            const refStepX = canvas.width / refMaxFrames;
 
-          // 从底部绘制
-          ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+            for (let i = 0; i < refMaxFrames; i++) {
+              if (i >= refData.length) break;
 
-          x += barWidth + 1;
+              const refValue = refData[i];
+              const y = canvas.height - (refValue / 255) * maxBarHeight;
+              const x = i * refStepX;
+
+              if (i === 0) {
+                ctx.moveTo(x, y);
+              } else {
+                // 使用二次贝塞尔曲线让线条更平滑
+                const prevX = (i - 1) * refStepX;
+                const prevY = canvas.height - (refData[i - 1] / 255) * maxBarHeight;
+                const cpX = (prevX + x) / 2;
+                ctx.quadraticCurveTo(cpX, prevY, x, y);
+              }
+            }
+            ctx.stroke();
+          }
+
+          // 再绘制实时收音的波形曲线 - 使用红色（录音中）
+          // 实时波形从左侧开始，随着录音进度向右延伸
+          ctx.strokeStyle = '#ff0000'; // 红色波形（录音中）
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+
+          const currentRecordedFrames = recordedData.length;
+          // 实时波形使用与基准波形相同的缩放比例，确保时间轴对齐
+          const refData = referenceWaveformDataRef.current;
+          const refMaxFrames = Math.min(refData.length, canvas.width);
+          const refStepX = canvas.width / refMaxFrames;
+
+          // 只绘制已记录的部分
+          for (let i = 0; i < currentRecordedFrames && i < refMaxFrames; i++) {
+            const frameData = recordedData[i];
+            // 使用最大值来显示波形
+            const maxValue = Math.max(...Array.from(frameData));
+            const y = canvas.height - (maxValue / 255) * maxBarHeight;
+            const x = i * refStepX;
+
+            if (i === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              // 使用二次贝塞尔曲线让线条更平滑
+              if (i - 1 >= 0 && i - 1 < recordedData.length) {
+                const prevFrameData = recordedData[i - 1];
+                const prevMaxValue = Math.max(...Array.from(prevFrameData));
+                const prevY = canvas.height - (prevMaxValue / 255) * maxBarHeight;
+                const prevX = (i - 1) * refStepX;
+                const cpX = (prevX + x) / 2;
+                ctx.quadraticCurveTo(cpX, prevY, x, y);
+              } else {
+                ctx.lineTo(x, y);
+              }
+            }
+          }
+          ctx.stroke();
+        } else {
+          // 如果没有录音，绘制实时柱状图（原来的逻辑）
+          const barWidth = (canvas.width / bufferLength) * 2.5;
+          let barHeight;
+          let x = 0;
+
+          ctx.fillStyle = '#00ff00'; // 绿色
+
+          for (let i = 0; i < bufferLength; i++) {
+            barHeight = (dataArray[i] / 255) * canvas.height;
+
+            // 从底部绘制
+            ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+            x += barWidth + 1;
+          }
         }
       } else {
-        // 如果没有分析器，只清空画布
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        // 如果没有分析器，只清空画布并填充纯色背景
+        ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
     };
@@ -271,7 +524,6 @@ export default function Page20() {
       case 'start-recording':
         isRecordingRef.current = true;
         recordedWaveformDataRef.current = []; // 清空之前的记录
-        referenceWaveformDataRef.current = []; // 清空对比波形
         isShowingRecordedRef.current = false;
         setShowVideo(false); // 隐藏视频，显示图片
         videoPlayerReadyRef.current = false; // 重置视频播放器状态
@@ -297,40 +549,8 @@ export default function Page20() {
       case 'stop-recording':
         isRecordingRef.current = false;
         isShowingRecordedRef.current = true; // 标记为显示记录的波形
-        setShowVideo(true); // 显示视频
-        
-        // 生成对比波形（基准波形）
-        const recordedData = recordedWaveformDataRef.current;
-        if (recordedData.length > 0) {
-          // 基于实际波形生成对比波形，使其看起来更平滑、更标准
-          const referenceData: number[] = [];
-          const smoothingWindow = 5; // 平滑窗口大小
-          
-          for (let i = 0; i < recordedData.length; i++) {
-            const frameData = recordedData[i];
-            const maxValue = Math.max(...Array.from(frameData));
-            
-            // 使用移动平均来平滑波形
-            let sum = 0;
-            let count = 0;
-            for (let j = Math.max(0, i - smoothingWindow); j <= Math.min(recordedData.length - 1, i + smoothingWindow); j++) {
-              const frameData2 = recordedData[j];
-              const maxValue2 = Math.max(...Array.from(frameData2));
-              sum += maxValue2;
-              count++;
-            }
-            
-            // 生成一个稍微调整的基准值，让对比波形看起来更标准
-            const smoothedValue = sum / count;
-            // 添加一些随机变化，但保持在合理范围内（±15%）
-            const variation = (Math.random() - 0.5) * 0.3; // -15% 到 +15%
-            const referenceValue = Math.min(255, Math.max(0, smoothedValue * (1 + variation)));
-            referenceData.push(referenceValue);
-          }
-          
-          referenceWaveformDataRef.current = referenceData;
-        }
-        
+        // 不自动显示视频，等待"正确"按钮触发
+
         // 暂停背景视频
         const currentState2 = usePresentationStore.getState();
         if (currentState2.isPlaying) {
@@ -339,65 +559,103 @@ export default function Page20() {
             isPlaying: false,
           });
         }
-        // 播放替换图片的视频
+        // 不自动播放替换图片的视频，等待"正确"按钮触发
+        // 停止绘制动画（但保留数据）
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+        // 重新绘制以显示记录的波形和基准波形（趋势曲线）
+        if (canvasRef.current) {
+          const canvas = canvasRef.current;
+          const ctx = canvas.getContext('2d');
+          const recordedData = recordedWaveformDataRef.current;
+          if (ctx && recordedData.length > 0) {
+            // 清空画布并填充纯色背景
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const maxBarHeight = canvas.height;
+
+            // 先绘制基准波形（从视频音频提取）- 使用半透明蓝色曲线
+            // 基准波形始终显示完整曲线，位置固定不变
+            if (referenceWaveformDataRef.current.length > 0) {
+              ctx.strokeStyle = 'rgba(0, 150, 255, 0.8)'; // 半透明蓝色
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+
+              const refData = referenceWaveformDataRef.current;
+              // 基准波形始终显示完整曲线，使用固定的缩放比例
+              const refMaxFrames = Math.min(refData.length, canvas.width);
+              const refStepX = canvas.width / refMaxFrames;
+
+              for (let i = 0; i < refMaxFrames; i++) {
+                if (i >= refData.length) break;
+
+                const refValue = refData[i];
+                const y = canvas.height - (refValue / 255) * maxBarHeight;
+                const x = i * refStepX;
+
+                if (i === 0) {
+                  ctx.moveTo(x, y);
+                } else {
+                  // 使用二次贝塞尔曲线让线条更平滑
+                  const prevX = (i - 1) * refStepX;
+                  const prevY = canvas.height - (refData[i - 1] / 255) * maxBarHeight;
+                  const cpX = (prevX + x) / 2;
+                  ctx.quadraticCurveTo(cpX, prevY, x, y);
+                }
+              }
+              ctx.stroke();
+            }
+
+            // 再绘制实际记录的波形 - 使用绿色曲线
+            // 记录波形使用与基准波形相同的缩放比例，确保时间轴对齐
+            ctx.strokeStyle = '#00ff00'; // 绿色波形
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            const refData = referenceWaveformDataRef.current;
+            const refMaxFrames = Math.min(refData.length, canvas.width);
+            const refStepX = canvas.width / refMaxFrames;
+
+            // 只绘制已记录的部分
+            for (let i = 0; i < recordedData.length && i < refMaxFrames; i++) {
+              const frameData = recordedData[i];
+              const maxValue = Math.max(...Array.from(frameData));
+              const y = canvas.height - (maxValue / 255) * maxBarHeight;
+              const x = i * refStepX;
+
+              if (i === 0) {
+                ctx.moveTo(x, y);
+              } else {
+                // 使用二次贝塞尔曲线让线条更平滑
+                if (i - 1 >= 0 && i - 1 < recordedData.length) {
+                  const prevFrameData = recordedData[i - 1];
+                  const prevMaxValue = Math.max(...Array.from(prevFrameData));
+                  const prevY = canvas.height - (prevMaxValue / 255) * maxBarHeight;
+                  const prevX = (i - 1) * refStepX;
+                  const cpX = (prevX + x) / 2;
+                  ctx.quadraticCurveTo(cpX, prevY, x, y);
+                } else {
+                  ctx.lineTo(x, y);
+                }
+              }
+            }
+            ctx.stroke();
+          }
+        }
+        break;
+
+      case 'play-video':
+        // 点击"正确"按钮后播放视频
+        setShowVideo(true); // 显示视频
         if (videoPlayerRef.current) {
           const videoInternalPlayer = (videoPlayerRef.current as any).getInternalPlayer();
           if (videoInternalPlayer && videoInternalPlayer.paused) {
             videoInternalPlayer.play().catch((error: any) => {
               console.log('视频播放失败:', error);
             });
-          }
-        }
-        // 停止绘制动画（但保留数据）
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-          animationFrameRef.current = null;
-        }
-        // 重新绘制以显示记录的波形和对比波形
-        if (canvasRef.current) {
-          const canvas = canvasRef.current;
-          const ctx = canvas.getContext('2d');
-          if (ctx && recordedWaveformDataRef.current.length > 0) {
-            // 清空画布
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const maxFrames = Math.min(recordedData.length, canvas.width);
-            const startIndex = Math.max(0, recordedData.length - maxFrames);
-            const barWidth = canvas.width / maxFrames;
-            const maxBarHeight = canvas.height;
-
-            // 先绘制对比波形
-            if (referenceWaveformDataRef.current.length > 0) {
-              ctx.fillStyle = 'rgba(0, 150, 255, 0.6)'; // 半透明蓝色
-              const refData = referenceWaveformDataRef.current;
-              const refMaxFrames = Math.min(refData.length, maxFrames);
-              const refStartIndex = Math.max(0, refData.length - refMaxFrames);
-
-              for (let i = 0; i < refMaxFrames; i++) {
-                const refIndex = refStartIndex + i;
-                if (refIndex >= refData.length) break;
-                
-                const refValue = refData[refIndex];
-                const refBarHeight = (refValue / 255) * maxBarHeight;
-
-                ctx.fillRect(i * barWidth, canvas.height - refBarHeight, Math.max(1, barWidth), refBarHeight);
-              }
-            }
-
-            // 再绘制实际记录的波形
-            ctx.fillStyle = '#00ff00';
-
-            for (let i = 0; i < maxFrames; i++) {
-              const frameIndex = startIndex + i;
-              if (frameIndex >= recordedData.length) break;
-              
-              const frameData = recordedData[frameIndex];
-              const maxValue = Math.max(...Array.from(frameData));
-              const barHeight = (maxValue / 255) * maxBarHeight;
-
-              ctx.fillRect(i * barWidth, canvas.height - barHeight, Math.max(1, barWidth), barHeight);
-            }
           }
         }
         break;
@@ -437,6 +695,7 @@ export default function Page20() {
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
+
     };
   }, []);
 
@@ -572,11 +831,11 @@ export default function Page20() {
           width: '60%', // 初始大小，可调整
           height: '20%', // 初始大小，可调整
           zIndex: 10,
-          border: isRecordingRef.current 
+          border: isRecordingRef.current
             ? '2px solid rgba(255, 0, 0, 0.8)' // 记录时红色边框
-            : isShowingRecordedRef.current 
-            ? '2px solid rgba(0, 255, 0, 0.8)' // 显示记录时绿色边框
-            : '2px solid rgba(0, 255, 0, 0.5)', // 默认绿色边框
+            : isShowingRecordedRef.current
+              ? '2px solid rgba(0, 255, 0, 0.8)' // 显示记录时绿色边框
+              : '2px solid rgba(0, 255, 0, 0.5)', // 默认绿色边框
           borderRadius: '8px',
           backgroundColor: 'rgba(0, 0, 0, 0.3)',
           boxSizing: 'border-box',
@@ -594,6 +853,8 @@ export default function Page20() {
           }}
         />
       </div>
+
+
     </div>
   );
 }

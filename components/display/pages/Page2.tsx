@@ -12,30 +12,39 @@ export default function Page2() {
     setState: state.setState,
   }));
   const [volume, setVolume] = useState(0); // 0-100，0表示静音
+  const hasInitialized = useRef(false);
 
-  // 第二页加载时，自动设置为播放状态
+  // 第二页加载时，确保为暂停状态（不自动播放）- 只运行一次
   useEffect(() => {
+    if (hasInitialized.current) return;
+    
     const currentState = usePresentationStore.getState();
-    if (!currentState.isPlaying) {
+    if (currentState.isPlaying) {
       setState({
         ...currentState,
-        isPlaying: true,
+        isPlaying: false,
       });
     }
-  }, [setState]);
+    hasInitialized.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 空依赖数组，只在组件挂载时运行一次
 
   // 响应播放状态变化
   useEffect(() => {
     if (playerRef.current) {
       const internalPlayer = (playerRef.current as any).getInternalPlayer();
       if (internalPlayer) {
+        // 设置音量
+        if (internalPlayer.volume !== undefined) {
+          internalPlayer.volume = volume / 100;
+        }
+        // 根据音量设置静音状态
+        if (internalPlayer.muted !== undefined) {
+          internalPlayer.muted = volume === 0;
+        }
         if (isPlaying) {
           // 播放
           if (internalPlayer.paused) {
-            // 根据音量设置静音状态
-            if (internalPlayer.muted !== undefined) {
-              internalPlayer.muted = volume === 0;
-            }
             internalPlayer.play().catch((error: any) => {
               console.log('播放失败:', error);
             });
@@ -50,43 +59,32 @@ export default function Page2() {
     }
   }, [isPlaying, volume]);
 
-  // 确保视频初始自动播放
-  useEffect(() => {
-    const tryPlay = () => {
-      if (playerRef.current && isPlaying) {
-        const internalPlayer = (playerRef.current as any).getInternalPlayer();
-        if (internalPlayer && internalPlayer.paused) {
-          // 根据音量设置静音状态
-          if (internalPlayer.muted !== undefined) {
-            internalPlayer.muted = volume === 0;
-          }
-          internalPlayer.play().catch((error: any) => {
-            console.log('自动播放失败:', error);
-          });
-        }
-      }
-    };
+  const playerReadyRef = useRef(false);
 
-    // 等待播放器准备好
-    const timer = setTimeout(tryPlay, 300);
-
-    return () => clearTimeout(timer);
-  }, [isPlaying, volume]);
-
-  // 当播放器准备好时也尝试播放
+  // 当播放器准备好时设置音量并停留在第一帧（不自动播放）
   const handleReady = () => {
-    if (playerRef.current && isPlaying) {
+    if (playerRef.current && !playerReadyRef.current) {
       const internalPlayer = (playerRef.current as any).getInternalPlayer();
-      if (internalPlayer && internalPlayer.paused) {
-        try {
-          // 根据音量设置静音状态
-          if (internalPlayer.muted !== undefined) {
-            internalPlayer.muted = volume === 0;
-          }
-          internalPlayer.play();
-        } catch (error) {
-          console.log('播放失败:', error);
+      if (internalPlayer) {
+        // 设置初始音量
+        if (internalPlayer.volume !== undefined) {
+          internalPlayer.volume = volume / 100;
         }
+        // 根据音量设置静音状态
+        if (internalPlayer.muted !== undefined) {
+          internalPlayer.muted = volume === 0;
+        }
+        // 确保停留在第一帧
+        if (internalPlayer.currentTime !== undefined) {
+          internalPlayer.currentTime = 0;
+        }
+        // 只在首次加载时确保暂停状态，之后由 isPlaying 状态控制
+        if (!playerReadyRef.current && !isPlaying) {
+          if (!internalPlayer.paused) {
+            internalPlayer.pause();
+          }
+        }
+        playerReadyRef.current = true;
       }
     }
   };
@@ -180,10 +178,10 @@ export default function Page2() {
           config={{
             file: {
               attributes: {
-                autoPlay: true,
                 muted: volume === 0,
                 loop: false,
                 playsInline: true,
+                preload: 'metadata',
                 style: {
                   width: '100%',
                   height: '100%',
