@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: liaozhixiaoxiang
+    ports:
+      - "3000:3000"
+    volumes:
+      # 挂载代码目录，支持热重载（开发模式）
+      - .:/app
+      # 排除 node_modules，使用容器内的
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+

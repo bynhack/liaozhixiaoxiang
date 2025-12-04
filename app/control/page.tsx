@@ -119,6 +119,7 @@ export default function ControlPage() {
         <ControlPanel
           currentSlide={currentSlide}
           totalSlides={slides.length}
+          slides={slides}
           isPlaying={isPlaying}
           onPrev={prevSlide}
           onNext={nextSlide}
