@@ -26,6 +26,7 @@ import Page29Controls from './page-controls/Page29Controls';
 import Page31Controls from './page-controls/Page31Controls';
 import Page32Controls from './page-controls/Page32Controls';
 import Page33Controls from './page-controls/Page33Controls';
+import Page34Controls from './page-controls/Page34Controls';
 
 interface PageControlsProps {
   currentSlideId: number;
@@ -59,6 +60,7 @@ const pageControlComponents: Record<number, React.ComponentType> = {
   31: Page31Controls,
   32: Page32Controls,
   33: Page33Controls,
+  34: Page34Controls,
   // 在这里添加更多页面的控制组件
 };
 

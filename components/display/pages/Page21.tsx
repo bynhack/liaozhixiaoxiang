@@ -8,14 +8,19 @@ import { usePageControl } from '@/hooks/usePageControl';
 export default function Page21() {
   const playerRef = useRef<ReactPlayer>(null);
   const videoPlayerRef = useRef<ReactPlayer>(null); // 用于替换图片的视频播放器
+  const audioPlayerRef = useRef<ReactPlayer>(null); // 伴奏音频播放器
   const { isPlaying, setState } = usePresentationStore((state) => ({
     isPlaying: state.isPlaying,
     setState: state.setState,
   }));
   const [volume, setVolume] = useState(0); // 0-100，0表示静音
+  const [audioVolume, setAudioVolume] = useState(100); // 伴奏音量 0-100
+  const [currentTime, setCurrentTime] = useState(0); // 当前播放时间
+  const [currentLyricIndex, setCurrentLyricIndex] = useState(-1); // 当前歌词索引
   const hasInitialized = useRef(false);
   const playerReadyRef = useRef(false);
   const videoPlayerReadyRef = useRef(false);
+  const audioPlayerReadyRef = useRef(false);
 
   // 音频波形相关
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,6 +33,11 @@ export default function Page21() {
   const referenceWaveformDataRef = useRef<number[]>([]); // 存储基准波形数据（从视频音频提取）
   const isShowingRecordedRef = useRef(false); // 是否正在显示记录的波形
   const [showVideo, setShowVideo] = useState(false); // 控制是否显示视频（用于触发重新渲染）
+
+  // KTV歌词数据 - 每句歌词对应的时间点（秒）
+  const lyrics = [
+    { text: '河边走呀呦啰啰', startTime: 0, endTime: 999 }, // 只有一句歌词，设置一个很长的时间范围
+  ];
 
 
   // 从视频音频提取基准波形数据
@@ -81,7 +91,7 @@ export default function Page21() {
     };
 
     try {
-      const response = await fetch('/assets/videos/page-21-video.mp4');
+      const response = await fetch('/assets/videos/河边走呀呦啰啰.mp4');
       const arrayBuffer = await response.arrayBuffer();
 
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -169,7 +179,31 @@ export default function Page21() {
         }
       }
     }
-  }, [isPlaying, volume]);
+
+    // 同步控制伴奏音频播放
+    if (audioPlayerRef.current) {
+      const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+      if (audioInternalPlayer) {
+        if (audioInternalPlayer.volume !== undefined) {
+          audioInternalPlayer.volume = audioVolume / 100;
+        }
+        if (audioInternalPlayer.muted !== undefined) {
+          audioInternalPlayer.muted = audioVolume === 0;
+        }
+        if (isPlaying) {
+          if (audioInternalPlayer.paused) {
+            audioInternalPlayer.play().catch((error: any) => {
+              console.log('伴奏播放失败:', error);
+            });
+          }
+        } else {
+          if (!audioInternalPlayer.paused) {
+            audioInternalPlayer.pause();
+          }
+        }
+      }
+    }
+  }, [isPlaying, volume, audioVolume]);
 
   // 当播放器准备好时设置音量并停留在第一帧（不自动播放）
   const handleReady = () => {
@@ -195,6 +229,33 @@ export default function Page21() {
           }
         }
         playerReadyRef.current = true;
+      }
+    }
+  };
+
+  // 伴奏音频播放器准备就绪
+  const handleAudioReady = () => {
+    if (audioPlayerRef.current && !audioPlayerReadyRef.current) {
+      const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+      if (audioInternalPlayer) {
+        // 设置初始音量
+        if (audioInternalPlayer.volume !== undefined) {
+          audioInternalPlayer.volume = audioVolume / 100;
+        }
+        if (audioInternalPlayer.muted !== undefined) {
+          audioInternalPlayer.muted = audioVolume === 0;
+        }
+        // 确保停留在开始位置
+        if (audioInternalPlayer.currentTime !== undefined) {
+          audioInternalPlayer.currentTime = 0;
+        }
+        // 确保暂停状态
+        if (!audioPlayerReadyRef.current && !isPlaying) {
+          if (!audioInternalPlayer.paused) {
+            audioInternalPlayer.pause();
+          }
+        }
+        audioPlayerReadyRef.current = true;
       }
     }
   };
@@ -527,6 +588,8 @@ export default function Page21() {
         isShowingRecordedRef.current = false;
         setShowVideo(false); // 隐藏视频，显示图片
         videoPlayerReadyRef.current = false; // 重置视频播放器状态
+        setCurrentLyricIndex(-1); // 重置歌词索引
+        setCurrentTime(0); // 重置时间
         // 停止替换图片的视频（如果正在播放）
         if (videoPlayerRef.current) {
           const videoInternalPlayer = (videoPlayerRef.current as any).getInternalPlayer();
@@ -534,7 +597,14 @@ export default function Page21() {
             videoInternalPlayer.pause();
           }
         }
-        // 开始播放背景视频
+        // 重置伴奏音频到开始位置
+        if (audioPlayerRef.current) {
+          const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+          if (audioInternalPlayer && audioInternalPlayer.currentTime !== undefined) {
+            audioInternalPlayer.currentTime = 0;
+          }
+        }
+        // 开始播放背景视频和伴奏
         const currentState = usePresentationStore.getState();
         if (!currentState.isPlaying) {
           setState({
@@ -551,7 +621,7 @@ export default function Page21() {
         isShowingRecordedRef.current = true; // 标记为显示记录的波形
         // 不自动显示视频，等待"正确"按钮触发
 
-        // 暂停背景视频
+        // 暂停背景视频和伴奏
         const currentState2 = usePresentationStore.getState();
         if (currentState2.isPlaying) {
           setState({
@@ -660,6 +730,36 @@ export default function Page21() {
         }
         break;
 
+      case 'audio-volume':
+        // 设置伴奏音量
+        setAudioVolume(command.value as number);
+        break;
+
+      case 'play-audio':
+        // 播放伴奏音频
+        if (audioPlayerRef.current) {
+          const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+          if (audioInternalPlayer) {
+            // 重置到开始位置
+            if (audioInternalPlayer.currentTime !== undefined) {
+              audioInternalPlayer.currentTime = 0;
+            }
+            // 播放
+            audioInternalPlayer.play().catch((error: any) => {
+              console.log('伴奏播放失败:', error);
+            });
+            // 同步播放状态
+            const currentState = usePresentationStore.getState();
+            if (!currentState.isPlaying) {
+              setState({
+                ...currentState,
+                isPlaying: true,
+              });
+            }
+          }
+        }
+        break;
+
       default:
         break;
     }
@@ -763,7 +863,7 @@ export default function Page21() {
           // 停止收音后显示视频
           <ReactPlayer
             ref={videoPlayerRef}
-            url="/assets/videos/page-21-video.mp4"
+            url="/assets/videos/河边走呀呦啰啰.mp4"
             playing={true}
             loop={false}
             muted={false}
@@ -854,7 +954,111 @@ export default function Page21() {
         />
       </div>
 
+      {/* KTV歌词显示区域 */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '35%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '80%',
+          zIndex: 15,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '8px',
+            maxHeight: '150px',
+            overflowY: 'auto',
+            padding: '10px 20px',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            borderRadius: '12px',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          {lyrics.map((lyric, index) => {
+            const isActive = index === currentLyricIndex;
+            const isPast = currentLyricIndex > index;
+            const isFuture = currentLyricIndex < index && currentLyricIndex !== -1;
 
+            return (
+              <div
+                key={index}
+                style={{
+                  fontSize: isActive ? 'clamp(28px, 4vw, 48px)' : 'clamp(20px, 3vw, 36px)',
+                  fontWeight: isActive ? 'bold' : 'normal',
+                  color: isActive
+                    ? '#FFD700' // 当前歌词：金色
+                    : isPast
+                      ? 'rgba(255, 255, 255, 0.5)' // 已唱过的歌词：半透明白色
+                      : 'rgba(255, 255, 255, 0.8)', // 未唱的歌词：白色
+                  textShadow: isActive
+                    ? '0 0 10px rgba(255, 215, 0, 0.8), 2px 2px 4px rgba(0, 0, 0, 0.8)'
+                    : '2px 2px 4px rgba(0, 0, 0, 0.5)',
+                  transition: 'all 0.3s ease',
+                  transform: isActive ? 'scale(1.1)' : 'scale(1)',
+                  whiteSpace: 'nowrap',
+                  padding: '4px 12px',
+                  textAlign: 'center',
+                }}
+              >
+                {lyric.text}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 伴奏音频播放器（隐藏） */}
+      <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: 0 }}>
+        <ReactPlayer
+          ref={audioPlayerRef}
+          url="/assets/audios/2.河边走呀伴奏.mp3"
+          playing={isPlaying}
+          loop={false}
+          muted={audioVolume === 0}
+          controls={false}
+          width="1px"
+          height="1px"
+          onReady={handleAudioReady}
+          onProgress={(progress) => {
+            setCurrentTime(progress.playedSeconds);
+            // 根据当前时间找到对应的歌词索引
+            let newIndex = -1;
+            for (let i = 0; i < lyrics.length; i++) {
+              if (progress.playedSeconds >= lyrics[i].startTime && progress.playedSeconds < lyrics[i].endTime) {
+                newIndex = i;
+                break;
+              }
+            }
+            // 如果时间超过所有歌词，显示最后一句
+            if (newIndex === -1 && progress.playedSeconds >= lyrics[lyrics.length - 1].startTime) {
+              newIndex = lyrics.length - 1;
+            }
+            setCurrentLyricIndex(newIndex);
+          }}
+          onEnded={() => {
+            // 音频播放结束后重置
+            setCurrentLyricIndex(-1);
+            setCurrentTime(0);
+          }}
+          config={{
+            file: {
+              attributes: {
+                muted: audioVolume === 0,
+                loop: false,
+              },
+            },
+          }}
+        />
+      </div>
     </div>
   );
 }

@@ -35,8 +35,14 @@ export const defaultSlides: Slide[] = [
   {
     id: 6,
     type: 'video',
-    url: '/assets/videos/page-6.mp4',
+    url: '/assets/videos/乌鸦导入.mp4',
     title: '乌鸦导入',
+  },
+  {
+    id: 34,
+    type: 'component',
+    url: '',
+    title: '歌词填空',
   },
   {
     id: 7,
@@ -191,7 +197,7 @@ export const defaultSlides: Slide[] = [
   {
     id: 31,
     type: 'video',
-    url: '/assets/videos/page-31.mp4',
+    url: '/assets/videos/评委.mp4',
     title: '评价',
   },
   {

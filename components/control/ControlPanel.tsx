@@ -49,39 +49,39 @@ export default function ControlPanel({
               const slide = slides[index];
               const displayText = slide?.title || `${index + 1}`;
               return (
-                <button
-                  key={index}
-                  onClick={() => onJumpTo(index)}
-                  style={{
+              <button
+                key={index}
+                onClick={() => onJumpTo(index)}
+                style={{
                     minWidth: '44px',
-                    height: '44px',
+                  height: '44px',
                     padding: '0 12px',
-                    border: 'none',
-                    borderRadius: '12px',
-                    background:
-                      currentSlide === index
-                        ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                        : 'rgba(255, 255, 255, 0.1)',
-                    color: currentSlide === index ? '#fff' : 'rgba(255, 255, 255, 0.7)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  background:
+                    currentSlide === index
+                      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                      : 'rgba(255, 255, 255, 0.1)',
+                  color: currentSlide === index ? '#fff' : 'rgba(255, 255, 255, 0.7)',
                     fontSize: '14px',
-                    fontWeight: currentSlide === index ? '600' : '400',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow:
-                      currentSlide === index
-                        ? '0 4px 12px rgba(102, 126, 234, 0.4)'
-                        : 'none',
+                  fontWeight: currentSlide === index ? '600' : '400',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow:
+                    currentSlide === index
+                      ? '0 4px 12px rgba(102, 126, 234, 0.4)'
+                      : 'none',
                     whiteSpace: 'nowrap',
-                  }}
-                  onTouchStart={(e) => {
-                    e.currentTarget.style.transform = 'scale(0.95)';
-                  }}
-                  onTouchEnd={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                >
+                }}
+                onTouchStart={(e) => {
+                  e.currentTarget.style.transform = 'scale(0.95)';
+                }}
+                onTouchEnd={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
                   {displayText}
-                </button>
+              </button>
               );
             })}
           </div>

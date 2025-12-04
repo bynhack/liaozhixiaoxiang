@@ -7,12 +7,16 @@ import { usePageControl } from '@/hooks/usePageControl';
 
 export default function Page13() {
   const playerRef = useRef<ReactPlayer>(null);
+  const audioPlayerRef = useRef<ReactPlayer>(null); // 伴奏音频播放器
   const { isPlaying, setState } = usePresentationStore((state) => ({
     isPlaying: state.isPlaying,
     setState: state.setState,
   }));
   const [volume, setVolume] = useState(0); // 0-100，0表示静音
+  const [audioVolume, setAudioVolume] = useState(100); // 伴奏音量 0-100
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false); // 伴奏独立播放状态
   const hasInitialized = useRef(false);
+  const audioPlayerReadyRef = useRef(false);
 
   // 第十三页加载时，确保为暂停状态（不自动播放）- 只运行一次
   useEffect(() => {
@@ -57,7 +61,30 @@ export default function Page13() {
         }
       }
     }
-  }, [isPlaying, volume]);
+    // 同步伴奏音频播放状态（独立控制，不受视频播放状态影响）
+    if (audioPlayerRef.current) {
+      const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+      if (audioInternalPlayer) {
+        if (audioInternalPlayer.volume !== undefined) {
+          audioInternalPlayer.volume = audioVolume / 100;
+        }
+        if (audioInternalPlayer.muted !== undefined) {
+          audioInternalPlayer.muted = audioVolume === 0;
+        }
+        if (isAudioPlaying) {
+          if (audioInternalPlayer.paused) {
+            audioInternalPlayer.play().catch((error: any) => {
+              console.log('伴奏播放失败:', error);
+            });
+          }
+        } else {
+          if (!audioInternalPlayer.paused) {
+            audioInternalPlayer.pause();
+          }
+        }
+      }
+    }
+  }, [isPlaying, volume, audioVolume, isAudioPlaying]);
 
   const playerReadyRef = useRef(false);
 
@@ -89,36 +116,91 @@ export default function Page13() {
     }
   };
 
+  // 伴奏音频播放器准备就绪
+  const handleAudioReady = () => {
+    if (audioPlayerRef.current && !audioPlayerReadyRef.current) {
+      const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+      if (audioInternalPlayer) {
+        // 设置初始音量
+        if (audioInternalPlayer.volume !== undefined) {
+          audioInternalPlayer.volume = audioVolume / 100;
+        }
+        if (audioInternalPlayer.muted !== undefined) {
+          audioInternalPlayer.muted = audioVolume === 0;
+        }
+        // 确保停留在开始位置
+        if (audioInternalPlayer.currentTime !== undefined) {
+          audioInternalPlayer.currentTime = 0;
+        }
+        // 确保暂停状态
+        if (!audioPlayerReadyRef.current && !isAudioPlaying) {
+          if (!audioInternalPlayer.paused) {
+            audioInternalPlayer.pause();
+          }
+        }
+        audioPlayerReadyRef.current = true;
+      }
+    }
+  };
+
   // 处理页面控制命令
   const handlePageControl = useCallback((command: { type: string; value?: any }) => {
-    if (!playerRef.current) return;
-
-    const internalPlayer = (playerRef.current as any).getInternalPlayer();
-    if (!internalPlayer) return;
-
     switch (command.type) {
       case 'volume':
-        const newVolume = command.value as number;
-        setVolume(newVolume);
-        if (internalPlayer.volume !== undefined) {
-          internalPlayer.volume = newVolume / 100;
-        }
-        if (internalPlayer.muted !== undefined) {
-          internalPlayer.muted = newVolume === 0;
+        if (playerRef.current) {
+          const internalPlayer = (playerRef.current as any).getInternalPlayer();
+          if (internalPlayer) {
+            const newVolume = command.value as number;
+            setVolume(newVolume);
+            if (internalPlayer.volume !== undefined) {
+              internalPlayer.volume = newVolume / 100;
+            }
+            if (internalPlayer.muted !== undefined) {
+              internalPlayer.muted = newVolume === 0;
+            }
+          }
         }
         break;
 
       case 'seek':
-        const seconds = command.value as number;
-        if (internalPlayer.currentTime !== undefined) {
-          internalPlayer.currentTime = seconds;
+        if (playerRef.current) {
+          const internalPlayer = (playerRef.current as any).getInternalPlayer();
+          if (internalPlayer) {
+            const seconds = command.value as number;
+            if (internalPlayer.currentTime !== undefined) {
+              internalPlayer.currentTime = seconds;
+            }
+          }
+        }
+        break;
+
+      case 'audio-volume':
+        // 设置伴奏音量
+        setAudioVolume(command.value as number);
+        break;
+
+      case 'play-audio':
+        // 播放伴奏音频（只控制伴奏，不影响视频）
+        setIsAudioPlaying(true);
+        if (audioPlayerRef.current) {
+          const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+          if (audioInternalPlayer) {
+            // 重置到开始位置
+            if (audioInternalPlayer.currentTime !== undefined) {
+              audioInternalPlayer.currentTime = 0;
+            }
+            // 播放
+            audioInternalPlayer.play().catch((error: any) => {
+              console.log('伴奏播放失败:', error);
+            });
+          }
         }
         break;
 
       default:
         break;
     }
-  }, []);
+  }, [setState]);
 
   // 监听页面控制命令
   usePageControl(13, handlePageControl);
@@ -138,6 +220,21 @@ export default function Page13() {
     }
   }, [volume]);
 
+  // 更新伴奏音量
+  useEffect(() => {
+    if (audioPlayerRef.current) {
+      const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+      if (audioInternalPlayer) {
+        if (audioInternalPlayer.volume !== undefined) {
+          audioInternalPlayer.volume = audioVolume / 100;
+        }
+        if (audioInternalPlayer.muted !== undefined) {
+          audioInternalPlayer.muted = audioVolume === 0;
+        }
+      }
+    }
+  }, [audioVolume]);
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       {/* 背景视频层 */}
@@ -153,7 +250,7 @@ export default function Page13() {
       >
         <ReactPlayer
           ref={playerRef}
-          url="/assets/videos/page-13.mp4"
+          url="/assets/videos/勾一勾呀呦啰啰转场.mp4"
           playing={isPlaying}
           loop={false}
           muted={volume === 0}
@@ -192,7 +289,20 @@ export default function Page13() {
           }}
         />
       </div>
+      {/* 伴奏音频播放器 */}
+      <div style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}>
+        <ReactPlayer
+          ref={audioPlayerRef}
+          url="/assets/audios/4.勾一勾剪.MP3"
+          playing={isAudioPlaying}
+          loop={false}
+          muted={audioVolume === 0}
+          controls={false}
+          width="1px"
+          height="1px"
+          onReady={handleAudioReady}
+        />
+      </div>
     </div>
   );
 }
-

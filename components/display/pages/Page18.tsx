@@ -15,25 +15,25 @@ export default function Page18() {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const noteFrequencies: Record<string, number> = {
+    Bb3: 233.08,
+    C4: 261.63,
+    D4: 293.66,
+    Eb4: 311.13,
     F4: 349.23,
     G4: 392.0,
     A4: 440.0,
     Bb4: 466.16,
-    C5: 523.25,
-    D5: 587.33,
-    E5: 659.25,
-    F5: 698.46,
   };
 
   const keys = [
-    { note: 'F5', syllable: 'Fa', color: '#7AC143' },
-    { note: 'E5', syllable: 'Mi', color: '#F8A5C2' },
-    { note: 'D5', syllable: 'Re', color: '#9CCF4D' },
-    { note: 'C5', syllable: 'Do', color: '#FFDB5C' },
-    { note: 'Bb4', syllable: 'Ti', color: '#F99B45' },
-    { note: 'A4', syllable: 'La', color: '#B88AE8' },
-    { note: 'G4', syllable: 'So', color: '#6FB3D9' },
-    { note: 'F4', syllable: 'Fa', color: '#5BA3D0' },
+    { note: 'Bb4', syllable: 'Fa', color: '#7AC143' },
+    { note: 'A4', syllable: 'Mi', color: '#F8A5C2' },
+    { note: 'G4', syllable: 'Re', color: '#9CCF4D' },
+    { note: 'F4', syllable: 'Do', color: '#FFDB5C' },
+    { note: 'Eb4', syllable: 'Ti', color: '#F99B45' },
+    { note: 'D4', syllable: 'La', color: '#B88AE8' },
+    { note: 'C4', syllable: 'So', color: '#6FB3D9' },
+    { note: 'Bb3', syllable: 'Fa', color: '#5BA3D0' },
   ];
 
   const initAudio = () => {

@@ -171,7 +171,7 @@ export default function Page31() {
       >
         <ReactPlayer
           ref={playerRef}
-          url="/assets/videos/page-31.mp4"
+          url="/assets/videos/评委.mp4"
           playing={isPlaying}
           loop={false}
           muted={volume === 0}
