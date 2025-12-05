@@ -12,6 +12,66 @@ export default function Page33() {
     setState: state.setState,
   }));
   const [volume, setVolume] = useState(100); // 0-100，100表示最大音量，有声音
+  const playerReadyRef = useRef(false);
+
+  // 当播放器准备好时设置音量并停留在第一帧（不自动播放）
+  const handleReady = () => {
+    if (playerRef.current && !playerReadyRef.current) {
+      const internalPlayer = (playerRef.current as any).getInternalPlayer();
+      if (internalPlayer) {
+        // 设置初始音量
+        if (internalPlayer.volume !== undefined) {
+          internalPlayer.volume = volume / 100;
+        }
+        // 根据音量设置静音状态
+        if (internalPlayer.muted !== undefined) {
+          internalPlayer.muted = volume === 0;
+        }
+        // 确保停留在第一帧
+        if (internalPlayer.currentTime !== undefined) {
+          internalPlayer.currentTime = 0;
+        }
+        // 只在首次加载时确保暂停状态，之后由 isPlaying 状态控制
+        if (!playerReadyRef.current && !isPlaying) {
+          // 先短暂播放以显示第一帧，然后立即暂停
+          if (internalPlayer.paused) {
+            internalPlayer.muted = true; // 临时静音以确保能播放
+            internalPlayer.play()
+              .then(() => {
+                // 播放一小段时间后暂停并重置到第一帧
+                setTimeout(() => {
+                  if (internalPlayer) {
+                    internalPlayer.pause();
+                    if (internalPlayer.currentTime !== undefined) {
+                      internalPlayer.currentTime = 0;
+                    }
+                    // 恢复静音状态（根据音量设置）
+                    internalPlayer.muted = volume === 0;
+                  }
+                }, 100);
+              })
+              .catch(() => {
+                // 如果播放失败，直接暂停
+                if (internalPlayer && !internalPlayer.paused) {
+                  internalPlayer.pause();
+                }
+                if (internalPlayer && internalPlayer.currentTime !== undefined) {
+                  internalPlayer.currentTime = 0;
+                }
+                internalPlayer.muted = volume === 0;
+              });
+          } else {
+            // 如果已经在播放，直接暂停
+            internalPlayer.pause();
+            if (internalPlayer.currentTime !== undefined) {
+              internalPlayer.currentTime = 0;
+            }
+          }
+        }
+        playerReadyRef.current = true;
+      }
+    }
+  };
 
   // 响应播放状态变化（但不自动播放）
   useEffect(() => {
@@ -111,6 +171,7 @@ export default function Page33() {
           width="100%"
           height="100%"
           playsinline={true}
+          onReady={handleReady}
           config={{
             file: {
               attributes: {
@@ -118,6 +179,7 @@ export default function Page33() {
                 muted: volume === 0,
                 loop: true,
                 playsInline: true,
+                preload: 'auto',
                 style: {
                   width: '100%',
                   height: '100%',

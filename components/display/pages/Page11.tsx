@@ -107,8 +107,39 @@ export default function Page11() {
         }
         // 只在首次加载时确保暂停状态，之后由 isPlaying 状态控制
         if (!playerReadyRef.current && !isPlaying) {
-          if (!internalPlayer.paused) {
+          // 先短暂播放以显示第一帧，然后立即暂停
+          if (internalPlayer.paused) {
+            internalPlayer.muted = true; // 临时静音以确保能播放
+            internalPlayer.play()
+              .then(() => {
+                // 播放一小段时间后暂停并重置到第一帧
+                setTimeout(() => {
+                  if (internalPlayer) {
+                    internalPlayer.pause();
+                    if (internalPlayer.currentTime !== undefined) {
+                      internalPlayer.currentTime = 0;
+                    }
+                    // 恢复静音状态（根据音量设置）
+                    internalPlayer.muted = volume === 0;
+                  }
+                }, 100);
+              })
+              .catch(() => {
+                // 如果播放失败，直接暂停
+                if (internalPlayer && !internalPlayer.paused) {
+                  internalPlayer.pause();
+                }
+                if (internalPlayer && internalPlayer.currentTime !== undefined) {
+                  internalPlayer.currentTime = 0;
+                }
+                internalPlayer.muted = volume === 0;
+              });
+          } else {
+            // 如果已经在播放，直接暂停
             internalPlayer.pause();
+            if (internalPlayer.currentTime !== undefined) {
+              internalPlayer.currentTime = 0;
+            }
           }
         }
         playerReadyRef.current = true;
@@ -278,7 +309,7 @@ export default function Page11() {
                 muted: volume === 0,
                 loop: false,
                 playsInline: true,
-                preload: 'metadata',
+                preload: 'auto',
                 style: {
                   width: '100%',
                   height: '100%',
