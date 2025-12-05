@@ -107,39 +107,8 @@ export default function Page12() {
         }
         // 只在首次加载时确保暂停状态，之后由 isPlaying 状态控制
         if (!playerReadyRef.current && !isPlaying) {
-          // 先短暂播放以显示第一帧，然后立即暂停
-          if (internalPlayer.paused) {
-            internalPlayer.muted = true; // 临时静音以确保能播放
-            internalPlayer.play()
-              .then(() => {
-                // 播放一小段时间后暂停并重置到第一帧
-                setTimeout(() => {
-                  if (internalPlayer) {
-                    internalPlayer.pause();
-                    if (internalPlayer.currentTime !== undefined) {
-                      internalPlayer.currentTime = 0;
-                    }
-                    // 恢复静音状态（根据音量设置）
-                    internalPlayer.muted = volume === 0;
-                  }
-                }, 100);
-              })
-              .catch(() => {
-                // 如果播放失败，直接暂停
-                if (internalPlayer && !internalPlayer.paused) {
-                  internalPlayer.pause();
-                }
-                if (internalPlayer && internalPlayer.currentTime !== undefined) {
-                  internalPlayer.currentTime = 0;
-                }
-                internalPlayer.muted = volume === 0;
-              });
-          } else {
-            // 如果已经在播放，直接暂停
+          if (!internalPlayer.paused) {
             internalPlayer.pause();
-            if (internalPlayer.currentTime !== undefined) {
-              internalPlayer.currentTime = 0;
-            }
           }
         }
         playerReadyRef.current = true;
@@ -181,13 +150,13 @@ export default function Page12() {
         if (playerRef.current) {
           const internalPlayer = (playerRef.current as any).getInternalPlayer();
           if (internalPlayer) {
-            const newVolume = command.value as number;
-            setVolume(newVolume);
-            if (internalPlayer.volume !== undefined) {
-              internalPlayer.volume = newVolume / 100;
-            }
-            if (internalPlayer.muted !== undefined) {
-              internalPlayer.muted = newVolume === 0;
+        const newVolume = command.value as number;
+        setVolume(newVolume);
+        if (internalPlayer.volume !== undefined) {
+          internalPlayer.volume = newVolume / 100;
+        }
+        if (internalPlayer.muted !== undefined) {
+          internalPlayer.muted = newVolume === 0;
             }
           }
         }
@@ -197,9 +166,9 @@ export default function Page12() {
         if (playerRef.current) {
           const internalPlayer = (playerRef.current as any).getInternalPlayer();
           if (internalPlayer) {
-            const seconds = command.value as number;
-            if (internalPlayer.currentTime !== undefined) {
-              internalPlayer.currentTime = seconds;
+        const seconds = command.value as number;
+        if (internalPlayer.currentTime !== undefined) {
+          internalPlayer.currentTime = seconds;
             }
           }
         }
@@ -281,7 +250,7 @@ export default function Page12() {
       >
         <ReactPlayer
           ref={playerRef}
-          url="/assets/videos/扬起鼻子呦啰啰转场.mp4"
+          url={encodeURI("/assets/videos/扬起鼻子呦啰啰转场.mp4")}
           playing={isPlaying}
           loop={false}
           muted={volume === 0}
@@ -309,7 +278,7 @@ export default function Page12() {
                 muted: volume === 0,
                 loop: false,
                 playsInline: true,
-                preload: 'auto',
+                preload: 'metadata',
                 style: {
                   width: '100%',
                   height: '100%',
@@ -324,7 +293,7 @@ export default function Page12() {
       <div style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}>
         <ReactPlayer
           ref={audioPlayerRef}
-          url="/assets/audios/3.扬起鼻子剪.MP3"
+          url={encodeURI("/assets/audios/3.扬起鼻子剪.MP3")}
           playing={isAudioPlaying}
           loop={false}
           muted={audioVolume === 0}

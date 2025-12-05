@@ -210,7 +210,7 @@ export default function Page34() {
         }}
       >
         <img
-          src="/assets/images/歌词填空.png"
+          src={encodeURI("/assets/images/歌词填空.png")}
           alt="歌词填空"
           style={{
             width: '100%',
@@ -302,7 +302,7 @@ export default function Page34() {
       <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: 0 }}>
         <ReactPlayer
           ref={audioPlayerRef}
-          url="/assets/audios/完整伴奏.mp3"
+          url={encodeURI("/assets/audios/完整伴奏.mp3")}
           playing={isPlaying}
           loop={true}
           muted={volume === 0}

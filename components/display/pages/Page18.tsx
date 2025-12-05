@@ -245,67 +245,67 @@ export default function Page18() {
             style={{ position: 'relative', width: '100%', flex: 1 }}
           >
             <div
-              className="piano-key"
-              data-note={key.note}
+            className="piano-key"
+            data-note={key.note}
               style={{ width: '100%', height: '100%' }}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                const pressStart = Date.now();
-                const timer = setTimeout(() => {
-                  if (activeNotesRef.current[key.note]) {
-                    const { gain, decayEnd } = activeNotesRef.current[key.note];
-                    if (gain && audioContextRef.current) {
-                      gain.gain.cancelScheduledValues(audioContextRef.current.currentTime);
-                      gain.gain.setValueAtTime(gain.gain.value, audioContextRef.current.currentTime);
-                      gain.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 8);
-                      activeNotesRef.current[key.note].decayEnd = audioContextRef.current.currentTime + 8;
-                    }
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const pressStart = Date.now();
+              const timer = setTimeout(() => {
+                if (activeNotesRef.current[key.note]) {
+                  const { gain, decayEnd } = activeNotesRef.current[key.note];
+                  if (gain && audioContextRef.current) {
+                    gain.gain.cancelScheduledValues(audioContextRef.current.currentTime);
+                    gain.gain.setValueAtTime(gain.gain.value, audioContextRef.current.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 8);
+                    activeNotesRef.current[key.note].decayEnd = audioContextRef.current.currentTime + 8;
                   }
-                }, 1000);
-                pressTimersRef.current[key.note] = timer;
-                triggerNoteStart(key.note, e.currentTarget, key.color);
-              }}
-              onMouseUp={(e) => {
-                e.preventDefault();
-                if (pressTimersRef.current[key.note]) {
-                  clearTimeout(pressTimersRef.current[key.note]);
-                  delete pressTimersRef.current[key.note];
                 }
-                triggerNoteEnd(key.note, e.currentTarget);
-              }}
-              onMouseLeave={(e) => {
-                e.preventDefault();
-                if (pressTimersRef.current[key.note]) {
-                  clearTimeout(pressTimersRef.current[key.note]);
-                  delete pressTimersRef.current[key.note];
-                }
-                triggerNoteEnd(key.note, e.currentTarget);
-              }}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                const pressStart = Date.now();
-                const timer = setTimeout(() => {
-                  if (activeNotesRef.current[key.note]) {
-                    const { gain, decayEnd } = activeNotesRef.current[key.note];
-                    if (gain && audioContextRef.current) {
-                      gain.gain.cancelScheduledValues(audioContextRef.current.currentTime);
-                      gain.gain.setValueAtTime(gain.gain.value, audioContextRef.current.currentTime);
-                      gain.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 8);
-                      activeNotesRef.current[key.note].decayEnd = audioContextRef.current.currentTime + 8;
-                    }
+              }, 1000);
+              pressTimersRef.current[key.note] = timer;
+              triggerNoteStart(key.note, e.currentTarget, key.color);
+            }}
+            onMouseUp={(e) => {
+              e.preventDefault();
+              if (pressTimersRef.current[key.note]) {
+                clearTimeout(pressTimersRef.current[key.note]);
+                delete pressTimersRef.current[key.note];
+              }
+              triggerNoteEnd(key.note, e.currentTarget);
+            }}
+            onMouseLeave={(e) => {
+              e.preventDefault();
+              if (pressTimersRef.current[key.note]) {
+                clearTimeout(pressTimersRef.current[key.note]);
+                delete pressTimersRef.current[key.note];
+              }
+              triggerNoteEnd(key.note, e.currentTarget);
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              const pressStart = Date.now();
+              const timer = setTimeout(() => {
+                if (activeNotesRef.current[key.note]) {
+                  const { gain, decayEnd } = activeNotesRef.current[key.note];
+                  if (gain && audioContextRef.current) {
+                    gain.gain.cancelScheduledValues(audioContextRef.current.currentTime);
+                    gain.gain.setValueAtTime(gain.gain.value, audioContextRef.current.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 8);
+                    activeNotesRef.current[key.note].decayEnd = audioContextRef.current.currentTime + 8;
                   }
-                }, 1000);
-                pressTimersRef.current[key.note] = timer;
-                triggerNoteStart(key.note, e.currentTarget, key.color);
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                if (pressTimersRef.current[key.note]) {
-                  clearTimeout(pressTimersRef.current[key.note]);
-                  delete pressTimersRef.current[key.note];
                 }
-                triggerNoteEnd(key.note, e.currentTarget);
-              }}
+              }, 1000);
+              pressTimersRef.current[key.note] = timer;
+              triggerNoteStart(key.note, e.currentTarget, key.color);
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              if (pressTimersRef.current[key.note]) {
+                clearTimeout(pressTimersRef.current[key.note]);
+                delete pressTimersRef.current[key.note];
+              }
+              triggerNoteEnd(key.note, e.currentTarget);
+            }}
             />
             <span className="syllable">{key.syllable}</span>
           </div>

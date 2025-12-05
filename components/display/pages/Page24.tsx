@@ -91,7 +91,7 @@ export default function Page24() {
     };
 
     try {
-      const response = await fetch('/assets/videos/就像一对呦啰啰.mp4');
+      const response = await fetch(encodeURI('/assets/videos/就像一对呦啰啰.mp4'));
       const arrayBuffer = await response.arrayBuffer();
 
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -863,7 +863,7 @@ export default function Page24() {
           // 停止收音后显示视频
           <ReactPlayer
             ref={videoPlayerRef}
-            url="/assets/videos/就像一对呦啰啰.mp4"
+            url={encodeURI("/assets/videos/就像一对呦啰啰.mp4")}
             playing={true}
             loop={false}
             muted={false}
@@ -1020,7 +1020,7 @@ export default function Page24() {
       <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: 0 }}>
         <ReactPlayer
           ref={audioPlayerRef}
-          url="/assets/audios/5.就像一对伴奏.mp3"
+          url={encodeURI("/assets/audios/5.就像一对伴奏.mp3")}
           playing={isPlaying}
           loop={false}
           muted={audioVolume === 0}

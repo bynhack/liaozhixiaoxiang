@@ -91,7 +91,7 @@ export default function Page25() {
     };
 
     try {
-      const response = await fetch('/assets/videos/好朋友啊呦啰啰.mp4');
+      const response = await fetch(encodeURI('/assets/videos/好朋友啊呦啰啰.mp4'));
       const arrayBuffer = await response.arrayBuffer();
 
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -863,7 +863,7 @@ export default function Page25() {
           // 停止收音后显示视频
           <ReactPlayer
             ref={videoPlayerRef}
-            url="/assets/videos/好朋友啊呦啰啰.mp4"
+            url={encodeURI("/assets/videos/好朋友啊呦啰啰.mp4")}
             playing={true}
             loop={false}
             muted={false}
@@ -1020,7 +1020,7 @@ export default function Page25() {
       <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: 0 }}>
         <ReactPlayer
           ref={audioPlayerRef}
-          url="/assets/audios/6.好朋友伴奏.MP3"
+          url={encodeURI("/assets/audios/6.好朋友伴奏.MP3")}
           playing={isPlaying}
           loop={false}
           muted={audioVolume === 0}
