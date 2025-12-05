@@ -10,7 +10,7 @@ import PageControls from '@/components/control/PageControls';
 export default function ControlPage() {
   useSocket('control');
   const { slides, currentSlide, isPlaying } = usePresentationStore();
-  const { togglePlay, prevSlide, nextSlide, changeSlide } = useControlSocket();
+  const { togglePlay, prevSlide, nextSlide, changeSlide, isConnected } = useControlSocket();
   
   // 获取当前页面的ID
   const currentSlideId = slides[currentSlide]?.id || 0;
@@ -48,16 +48,16 @@ export default function ControlPage() {
 
   return (
     <div
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%)',
-        padding: '0',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
+        style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%)',
+          padding: '0',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
       {/* 背景装饰 */}
       <div
         style={{
@@ -91,17 +91,6 @@ export default function ControlPage() {
             marginBottom: '8px',
           }}
         >
-          <h1
-            style={{
-              fontSize: '24px',
-              fontWeight: '600',
-              color: '#ffffff',
-              margin: '0',
-              letterSpacing: '0.5px',
-            }}
-          >
-            演示控制
-          </h1>
           {slides.length > 0 && (
             <div
               style={{
@@ -113,6 +102,31 @@ export default function ControlPage() {
               {currentSlide + 1} / {slides.length}
             </div>
           )}
+          {/* 连接状态指示器 */}
+          <div
+            style={{
+              fontSize: '12px',
+              color: isConnected ? 'rgba(81, 207, 102, 0.8)' : 'rgba(255, 107, 107, 0.8)',
+              marginTop: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+            }}
+          >
+            <div
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: isConnected ? 'rgba(81, 207, 102, 0.8)' : 'rgba(255, 107, 107, 0.8)',
+                opacity: isConnected ? 1 : undefined,
+                transition: 'opacity 0.3s ease',
+              }}
+              className={!isConnected ? 'pulse-animation' : ''}
+            />
+            {isConnected ? '已连接' : '连接中...'}
+          </div>
         </div>
 
         {/* 控制面板 */}
@@ -149,6 +163,19 @@ export default function ControlPage() {
           </div>
         )}
       </div>
+      <style jsx global>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+        .pulse-animation {
+          animation: pulse 2s infinite;
+        }
+      `}</style>
     </div>
   );
 }

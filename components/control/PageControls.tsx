@@ -5,6 +5,7 @@ import Page2Controls from './page-controls/Page2Controls';
 import Page3Controls from './page-controls/Page3Controls';
 import Page4Controls from './page-controls/Page4Controls';
 import Page6Controls from './page-controls/Page6Controls';
+import Page7Controls from './page-controls/Page7Controls';
 import Page10Controls from './page-controls/Page10Controls';
 import Page11Controls from './page-controls/Page11Controls';
 import Page12Controls from './page-controls/Page12Controls';
@@ -27,6 +28,7 @@ import Page31Controls from './page-controls/Page31Controls';
 import Page32Controls from './page-controls/Page32Controls';
 import Page33Controls from './page-controls/Page33Controls';
 import Page34Controls from './page-controls/Page34Controls';
+import Page35Controls from './page-controls/Page35Controls';
 
 interface PageControlsProps {
   currentSlideId: number;
@@ -39,6 +41,7 @@ const pageControlComponents: Record<number, React.ComponentType> = {
   3: Page3Controls,
   4: Page4Controls,
   6: Page6Controls,
+  7: Page7Controls,
   10: Page10Controls,
   11: Page11Controls,
   12: Page12Controls,
@@ -61,6 +64,7 @@ const pageControlComponents: Record<number, React.ComponentType> = {
   32: Page32Controls,
   33: Page33Controls,
   34: Page34Controls,
+  35: Page35Controls,
   // 在这里添加更多页面的控制组件
 };
 

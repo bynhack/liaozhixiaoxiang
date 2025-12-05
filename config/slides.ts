@@ -206,6 +206,12 @@ export const defaultSlides: Slide[] = [
     url: '',
     title: '激励',
   },
+  {
+    id: 35,
+    type: 'component',
+    url: '',
+    title: '完美教唱',
+  },
   // 在这里添加更多幻灯片...
 ];
 

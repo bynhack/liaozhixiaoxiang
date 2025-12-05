@@ -41,7 +41,7 @@ export default function Page23Controls() {
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
       }}
     >
-      {/* 波形记录控制 */}
+      {/* 跟唱控制 */}
       <div>
         <div
           style={{
@@ -50,7 +50,7 @@ export default function Page23Controls() {
             marginBottom: '12px',
           }}
         >
-          波形记录
+          跟唱
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
@@ -87,14 +87,14 @@ export default function Page23Controls() {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <rect x="6" y="6" width="12" height="12" rx="2" />
                 </svg>
-                停止收音
+                停止跟唱
               </>
             ) : (
               <>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <circle cx="12" cy="12" r="10" />
                 </svg>
-                开始收音
+                跟唱
               </>
             )}
           </button>
@@ -139,7 +139,7 @@ export default function Page23Controls() {
         </div>
       </div>
 
-      {/* 伴奏播放控制 */}
+      {/* 示范控制 */}
       <div style={{ marginTop: '20px' }}>
         <div
           style={{
@@ -148,7 +148,7 @@ export default function Page23Controls() {
             marginBottom: '12px',
           }}
         >
-          伴奏播放
+          示范
         </div>
         <button
           onClick={handlePlayAudio}
@@ -178,7 +178,7 @@ export default function Page23Controls() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M8 5v14l11-7z" />
           </svg>
-          播放伴奏
+          示范
         </button>
       </div>
     </div>

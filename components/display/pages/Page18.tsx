@@ -227,15 +227,15 @@ export default function Page18() {
       <div
         style={{
           position: 'absolute',
-          right: '13%',
-          top: '54%',
+          right: '0.1%',
+          top: '57%',
           transform: 'translateY(-50%)',
-          width: '10%',
-          height: '54%',
+          width: '12%',
+          height: '62%',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: '1.4%',
+          gap: '0.5%',
           padding: 0,
         }}
       >

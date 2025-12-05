@@ -36,6 +36,7 @@ import Page31 from './pages/Page31';
 import Page32 from './pages/Page32';
 import Page33 from './pages/Page33';
 import Page34 from './pages/Page34';
+import Page35 from './pages/Page35';
 
 interface DisplaySlideProps {
   slide: Slide;
@@ -77,6 +78,7 @@ const pageComponents: Record<number, React.ComponentType> = {
   32: Page32,
   33: Page33,
   34: Page34,
+  35: Page35,
   // 在这里添加更多页面组件
 };
 

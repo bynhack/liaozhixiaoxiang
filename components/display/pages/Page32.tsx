@@ -2,12 +2,40 @@
 
 import { useEffect, useState, useRef } from 'react';
 
+const STORAGE_KEY = 'page32-teams-data';
+
 export default function Page32() {
-  const [teams, setTeams] = useState([
-    { id: 1, score: 0, trunkLength: 40 },
-    { id: 2, score: 0, trunkLength: 40 },
-    { id: 3, score: 0, trunkLength: 40 },
-  ]);
+  // 从 localStorage 读取初始数据
+  const getInitialTeams = () => {
+    if (typeof window === 'undefined') {
+      return [
+        { id: 1, score: 0, trunkLength: 40 },
+        { id: 2, score: 0, trunkLength: 40 },
+        { id: 3, score: 0, trunkLength: 40 },
+      ];
+    }
+    
+    try {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        // 验证数据格式
+        if (Array.isArray(parsed) && parsed.length === 3) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.log('读取 localStorage 失败:', error);
+    }
+    
+    return [
+      { id: 1, score: 0, trunkLength: 40 },
+      { id: 2, score: 0, trunkLength: 40 },
+      { id: 3, score: 0, trunkLength: 40 },
+    ];
+  };
+
+  const [teams, setTeams] = useState(getInitialTeams);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const celebrationRef = useRef<HTMLDivElement>(null);
 
@@ -91,11 +119,18 @@ export default function Page32() {
 
   // 重置所有小组
   const resetAll = () => {
-    setTeams([
+    const defaultTeams = [
       { id: 1, score: 0, trunkLength: 40 },
       { id: 2, score: 0, trunkLength: 40 },
       { id: 3, score: 0, trunkLength: 40 },
-    ]);
+    ];
+    setTeams(defaultTeams);
+    // 清除 localStorage
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      console.log('清除 localStorage 失败:', error);
+    }
     playClickSound();
   };
 
@@ -150,6 +185,15 @@ export default function Page32() {
       }
     }, 1100);
   };
+
+  // 保存 teams 数据到 localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(teams));
+    } catch (error) {
+      console.log('保存到 localStorage 失败:', error);
+    }
+  }, [teams]);
 
   // 添加样式到head
   useEffect(() => {
