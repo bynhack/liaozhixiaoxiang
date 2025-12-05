@@ -250,7 +250,7 @@ export default function Page15() {
       >
         <ReactPlayer
           ref={playerRef}
-          url={encodeURI("/assets/videos/好朋友呀呦啰啰转场.mp4")}
+          url="/assets/videos/好朋友呀呦啰啰转场.mp4"
           playing={isPlaying}
           loop={false}
           muted={volume === 0}
@@ -293,7 +293,7 @@ export default function Page15() {
       <div style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}>
         <ReactPlayer
           ref={audioPlayerRef}
-          url={encodeURI("/assets/audios/6.好朋友剪.MP3")}
+          url="/assets/audios/6.好朋友剪.MP3"
           playing={isAudioPlaying}
           loop={false}
           muted={audioVolume === 0}

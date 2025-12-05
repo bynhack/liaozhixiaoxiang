@@ -863,7 +863,7 @@ export default function Page26() {
           // 停止收音后显示视频
           <ReactPlayer
             ref={videoPlayerRef}
-            url={encodeURI("/assets/videos/见面握握手第一句.mp4")}
+            url="/assets/videos/见面握握手第一句.mp4"
             playing={true}
             loop={false}
             muted={false}
@@ -1024,7 +1024,7 @@ export default function Page26() {
       <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: 0 }}>
         <ReactPlayer
           ref={audioPlayerRef}
-          url={encodeURI("/assets/audios/7.见面握握手伴奏.MP3")}
+          url="/assets/audios/7.见面握握手伴奏.MP3"
           playing={isPlaying}
           loop={false}
           muted={audioVolume === 0}

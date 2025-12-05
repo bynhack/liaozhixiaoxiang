@@ -91,7 +91,7 @@ export default function Page20() {
     };
 
     try {
-      const response = await fetch(encodeURI('/assets/videos/两只小象呦啰啰.mp4'));
+      const response = await fetch('/assets/videos/两只小象呦啰啰.mp4');
       const arrayBuffer = await response.arrayBuffer();
 
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -892,7 +892,7 @@ export default function Page20() {
           // 停止收音后显示视频
           <ReactPlayer
             ref={videoPlayerRef}
-            url={encodeURI("/assets/videos/两只小象呦啰啰.mp4")}
+            url="/assets/videos/两只小象呦啰啰.mp4"
             playing={true}
             loop={false}
             muted={false}
@@ -1049,7 +1049,7 @@ export default function Page20() {
       <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: 0 }}>
         <ReactPlayer
           ref={audioPlayerRef}
-          url={encodeURI("/assets/audios/1.两只小象哟啰啰伴奏.mp3")}
+          url="/assets/audios/1.两只小象哟啰啰伴奏.mp3"
           playing={isPlaying}
           loop={false}
           muted={audioVolume === 0}

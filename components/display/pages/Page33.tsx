@@ -103,7 +103,7 @@ export default function Page33() {
       >
         <ReactPlayer
           ref={playerRef}
-          url={encodeURI("/assets/videos/完整带伴奏.mp4")}
+          url="/assets/videos/完整带伴奏.mp4"
           playing={isPlaying}
           loop={true}
           muted={volume === 0}

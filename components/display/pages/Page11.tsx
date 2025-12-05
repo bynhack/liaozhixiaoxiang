@@ -250,7 +250,7 @@ export default function Page11() {
       >
         <ReactPlayer
           ref={playerRef}
-          url={encodeURI("/assets/videos/河边走呀呦啰啰转场.mp4")}
+          url="/assets/videos/河边走呀呦啰啰转场.mp4"
           playing={isPlaying}
           loop={false}
           muted={volume === 0}
@@ -293,7 +293,7 @@ export default function Page11() {
       <div style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}>
         <ReactPlayer
           ref={audioPlayerRef}
-          url={encodeURI("/assets/audios/2.河边走剪.MP3")}
+          url="/assets/audios/2.河边走剪.MP3"
           playing={isAudioPlaying}
           loop={false}
           muted={audioVolume === 0}
