@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { usePageControl } from '@/hooks/usePageControl';
 
 const STORAGE_KEY = 'page32-teams-data';
 
@@ -194,6 +195,30 @@ export default function Page32() {
       console.log('保存到 localStorage 失败:', error);
     }
   }, [teams]);
+
+  // 处理页面控制命令
+  const handlePageControl = useCallback((command: { type: string; value?: any }) => {
+    switch (command.type) {
+      case 'reward-team':
+        // 给指定小组加分
+        const teamId = command.value as number;
+        if (teamId >= 1 && teamId <= 3) {
+          rewardTeam(teamId);
+        }
+        break;
+
+      case 'reset-all':
+        // 重置所有小组
+        resetAll();
+        break;
+
+      default:
+        break;
+    }
+  }, []);
+
+  // 监听页面控制命令
+  usePageControl(32, handlePageControl);
 
   // 添加样式到head
   useEffect(() => {

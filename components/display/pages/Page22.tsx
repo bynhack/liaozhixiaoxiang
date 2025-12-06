@@ -295,16 +295,15 @@ export default function Page22() {
 
     initAudio();
 
-    let count = 3;
+    let count = 1; // 从1开始倒计时
     setCountdown(count);
 
     const countdownInterval = setInterval(() => {
-      count--;
-      if (count > 0) {
+      count++;
+      if (count <= 3) {
         setCountdown(count);
-      } else if (count === 0) {
-        setCountdown(-1); // Show "唱!"
       } else {
+        // 倒计时结束（1, 2, 3 都显示完了）
         clearInterval(countdownInterval);
         countdownTimerRef.current = null;
         setCountdown(null);
@@ -322,10 +321,37 @@ export default function Page22() {
     userPathRef.current = [];
     setCurrentCharIndex(-1); // 重置字符索引
     
-    // 倒计时结束后，如果是跟唱模式，才激活录音状态
+    // 倒计时结束后，如果是跟唱模式，同时激活录音状态和播放伴奏
     if (muteGuide) {
       setIsMicActive(true);
       isMicActiveRef.current = true;
+      
+      // 播放伴奏音频（确保先停止并重置，再播放）
+      if (audioPlayerRef.current) {
+        const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+        if (audioInternalPlayer) {
+          // 先停止可能正在播放的伴奏
+          if (!audioInternalPlayer.paused) {
+            audioInternalPlayer.pause();
+          }
+          // 确保在开始位置
+          if (audioInternalPlayer.currentTime !== undefined) {
+            audioInternalPlayer.currentTime = 0;
+          }
+          // 然后播放伴奏
+          audioInternalPlayer.play().catch((error: any) => {
+            console.log('伴奏播放失败:', error);
+          });
+          // 同步播放状态
+          const currentState = usePresentationStore.getState();
+          if (!currentState.isPlaying) {
+            setState({
+              ...currentState,
+              isPlaying: true,
+            });
+          }
+        }
+      }
     }
 
     // 无论是示范还是跟唱，都不播放旋律音频，只播放伴奏音频
@@ -417,7 +443,7 @@ export default function Page22() {
     };
 
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [autoCorrelate, getYFromFreq, drawMelodyCurve, stopMelodyPlayback]);
+  }, [autoCorrelate, getYFromFreq, drawMelodyCurve, stopMelodyPlayback, setState]);
 
   // 初始化麦克风（但不激活录音状态，等倒计时结束后再激活）
   const initMicrophone = useCallback(async () => {
@@ -653,12 +679,27 @@ export default function Page22() {
             videoInternalPlayer.pause();
           }
         }
-        // 重置伴奏音频到开始位置
+        // 停止并重置伴奏音频到开始位置（不播放，等倒计时结束后再播放）
         if (audioPlayerRef.current) {
           const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
-          if (audioInternalPlayer && audioInternalPlayer.currentTime !== undefined) {
-            audioInternalPlayer.currentTime = 0;
+          if (audioInternalPlayer) {
+            // 先停止正在播放的伴奏（如果正在播放）
+            if (!audioInternalPlayer.paused) {
+              audioInternalPlayer.pause();
+            }
+            // 重置到开始位置
+            if (audioInternalPlayer.currentTime !== undefined) {
+              audioInternalPlayer.currentTime = 0;
+            }
           }
+        }
+        // 同步停止播放状态
+        const currentState3 = usePresentationStore.getState();
+        if (currentState3.isPlaying) {
+          setState({
+            ...currentState3,
+            isPlaying: false,
+          });
         }
         // 初始化麦克风并开始跟唱
         initMicrophone().then(() => {
@@ -952,7 +993,7 @@ export default function Page22() {
                 fontFamily: "'ZCOOL KuaiLe', cursive",
               }}
             >
-              {countdown === -1 ? '唱!' : countdown}
+              {countdown}
             </span>
           </div>
         )}
