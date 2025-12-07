@@ -20,9 +20,12 @@ export default function Page32() {
       const savedData = localStorage.getItem(STORAGE_KEY);
       if (savedData) {
         const parsed = JSON.parse(savedData);
-        // 验证数据格式
+        // 验证数据格式并重新计算鼻子长度
         if (Array.isArray(parsed) && parsed.length === 3) {
-          return parsed;
+          return parsed.map((team: any) => ({
+            ...team,
+            trunkLength: 40 + (team.score || 0) * 20, // 根据积分重新计算鼻子长度
+          }));
         }
       }
     } catch (error) {
@@ -99,13 +102,12 @@ export default function Page32() {
     setTeams((prevTeams) => {
       const newTeams = prevTeams.map((team) => {
         if (team.id === teamId) {
-          let newTrunkLength = team.trunkLength + 20;
-          if (newTrunkLength > 160) {
-            newTrunkLength = 160;
-          }
+          const newScore = team.score + 1;
+          // 根据积分自动计算鼻子长度：基础长度40 + 每分20px，可以无限增长
+          const newTrunkLength = 40 + newScore * 20;
           return {
             ...team,
-            score: team.score + 1,
+            score: newScore,
             trunkLength: newTrunkLength,
           };
         }
@@ -295,6 +297,7 @@ export default function Page32() {
         justify-content: center;
         align-items: flex-start;
         flex-grow: 1;
+        overflow: visible;
       }
       .page32-elephant {
         position: relative;
@@ -372,11 +375,14 @@ export default function Page32() {
         top: 125px;
         left: 50%;
         transform: translateX(-50%);
-        height: 150px;
+        height: auto;
+        min-height: 150px;
+        max-height: 400px;
         display: flex;
         flex-direction: column;
         align-items: center;
         z-index: 1;
+        overflow: visible;
       }
       .page32-elephant-trunk {
         width: 45px;
@@ -418,6 +424,11 @@ export default function Page32() {
       }
       .page32-score-container {
         margin: 12px 0;
+        position: relative;
+        z-index: 10;
+        background-color: white;
+        padding: 8px;
+        border-radius: 8px;
       }
       .page32-score-label {
         font-size: 1rem;
