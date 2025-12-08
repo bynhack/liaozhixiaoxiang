@@ -6,6 +6,7 @@ import Page3Controls from './page-controls/Page3Controls';
 import Page4Controls from './page-controls/Page4Controls';
 import Page6Controls from './page-controls/Page6Controls';
 import Page7Controls from './page-controls/Page7Controls';
+import Page8Controls from './page-controls/Page8Controls';
 import Page10Controls from './page-controls/Page10Controls';
 import Page11Controls from './page-controls/Page11Controls';
 import Page12Controls from './page-controls/Page12Controls';
@@ -14,6 +15,7 @@ import Page14Controls from './page-controls/Page14Controls';
 import Page15Controls from './page-controls/Page15Controls';
 import Page16Controls from './page-controls/Page16Controls';
 import Page17Controls from './page-controls/Page17Controls';
+import Page18Controls from './page-controls/Page18Controls';
 import Page20Controls from './page-controls/Page20Controls';
 import Page21Controls from './page-controls/Page21Controls';
 import Page22Controls from './page-controls/Page22Controls';
@@ -24,11 +26,13 @@ import Page26Controls from './page-controls/Page26Controls';
 import Page27Controls from './page-controls/Page27Controls';
 import Page28Controls from './page-controls/Page28Controls';
 import Page29Controls from './page-controls/Page29Controls';
+import Page30Controls from './page-controls/Page30Controls';
 import Page31Controls from './page-controls/Page31Controls';
 import Page32Controls from './page-controls/Page32Controls';
 import Page33Controls from './page-controls/Page33Controls';
 import Page34Controls from './page-controls/Page34Controls';
 import Page35Controls from './page-controls/Page35Controls';
+import Page36Controls from './page-controls/Page36Controls';
 
 interface PageControlsProps {
   currentSlideId: number;
@@ -42,6 +46,7 @@ const pageControlComponents: Record<number, React.ComponentType> = {
   4: Page4Controls,
   6: Page6Controls,
   7: Page7Controls,
+  8: Page8Controls,
   10: Page10Controls,
   11: Page11Controls,
   12: Page12Controls,
@@ -50,6 +55,7 @@ const pageControlComponents: Record<number, React.ComponentType> = {
   15: Page15Controls,
   16: Page16Controls,
   17: Page17Controls,
+  18: Page18Controls,
   20: Page20Controls,
   21: Page21Controls,
   22: Page22Controls,
@@ -60,11 +66,13 @@ const pageControlComponents: Record<number, React.ComponentType> = {
   27: Page27Controls,
   28: Page28Controls,
   29: Page29Controls,
+  30: Page30Controls,
   31: Page31Controls,
   32: Page32Controls,
   33: Page33Controls,
   34: Page34Controls,
   35: Page35Controls,
+  36: Page36Controls,
   // 在这里添加更多页面的控制组件
 };
 

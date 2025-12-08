@@ -8,6 +8,7 @@ import { usePageControl } from '@/hooks/usePageControl';
 export default function Page17() {
   const playerRef = useRef<ReactPlayer>(null);
   const audioPlayerRef = useRef<ReactPlayer>(null); // 伴奏音频播放器
+  const videoAudioPlayerRef = useRef<ReactPlayer>(null); // 视频对应音频播放器
   const { isPlaying, setState } = usePresentationStore((state) => ({
     isPlaying: state.isPlaying,
     setState: state.setState,
@@ -15,25 +16,11 @@ export default function Page17() {
   const [volume, setVolume] = useState(0); // 0-100，0表示静音
   const [audioVolume, setAudioVolume] = useState(100); // 伴奏音量 0-100
   const [isAudioPlaying, setIsAudioPlaying] = useState(false); // 伴奏独立播放状态
-  const hasInitialized = useRef(false);
+  const [isVideoAudioPlaying, setIsVideoAudioPlaying] = useState(false); // 视频对应音频播放状态
   const audioPlayerReadyRef = useRef(false);
+  const videoAudioPlayerReadyRef = useRef(false);
 
-  // 第十七页加载时，确保为暂停状态（不自动播放）- 只运行一次
-  useEffect(() => {
-    if (hasInitialized.current) return;
-    
-    const currentState = usePresentationStore.getState();
-    if (currentState.isPlaying) {
-      setState({
-        ...currentState,
-        isPlaying: false,
-      });
-    }
-    hasInitialized.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 空依赖数组，只在组件挂载时运行一次
-
-  // 响应播放状态变化
+  // 响应视频播放状态变化
   useEffect(() => {
     if (playerRef.current) {
       const internalPlayer = (playerRef.current as any).getInternalPlayer();
@@ -61,7 +48,10 @@ export default function Page17() {
         }
       }
     }
-    // 同步伴奏音频播放状态（独立控制，不受视频播放状态影响）
+  }, [isPlaying, volume]);
+
+  // 响应伴奏播放状态变化（独立控制，不受视频播放状态影响）
+  useEffect(() => {
     if (audioPlayerRef.current) {
       const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
       if (audioInternalPlayer) {
@@ -84,16 +74,40 @@ export default function Page17() {
         }
       }
     }
-  }, [isPlaying, volume, audioVolume, isAudioPlaying]);
+  }, [isAudioPlaying, audioVolume]);
 
-  const playerReadyRef = useRef(false);
+  // 响应视频对应音频播放状态变化
+  useEffect(() => {
+    if (videoAudioPlayerRef.current) {
+      const videoAudioInternalPlayer = (videoAudioPlayerRef.current as any).getInternalPlayer();
+      if (videoAudioInternalPlayer) {
+        if (videoAudioInternalPlayer.volume !== undefined) {
+          videoAudioInternalPlayer.volume = 1;
+        }
+        if (videoAudioInternalPlayer.muted !== undefined) {
+          videoAudioInternalPlayer.muted = false;
+        }
+        if (isVideoAudioPlaying) {
+          if (videoAudioInternalPlayer.paused) {
+            videoAudioInternalPlayer.play().catch((error: any) => {
+              console.log('视频音频播放失败:', error);
+            });
+          }
+        } else {
+          if (!videoAudioInternalPlayer.paused) {
+            videoAudioInternalPlayer.pause();
+          }
+        }
+      }
+    }
+  }, [isVideoAudioPlaying]);
 
-  // 当播放器准备好时设置音量并停留在第一帧（不自动播放）
+  // 当播放器准备好时设置音量
   const handleReady = () => {
-    if (playerRef.current && !playerReadyRef.current) {
+    if (playerRef.current) {
       const internalPlayer = (playerRef.current as any).getInternalPlayer();
       if (internalPlayer) {
-        // 设置初始音量
+        // 设置音量
         if (internalPlayer.volume !== undefined) {
           internalPlayer.volume = volume / 100;
         }
@@ -101,17 +115,6 @@ export default function Page17() {
         if (internalPlayer.muted !== undefined) {
           internalPlayer.muted = volume === 0;
         }
-        // 确保停留在第一帧
-        if (internalPlayer.currentTime !== undefined) {
-          internalPlayer.currentTime = 0;
-        }
-        // 只在首次加载时确保暂停状态，之后由 isPlaying 状态控制
-        if (!playerReadyRef.current && !isPlaying) {
-          if (!internalPlayer.paused) {
-            internalPlayer.pause();
-          }
-        }
-        playerReadyRef.current = true;
       }
     }
   };
@@ -139,6 +142,30 @@ export default function Page17() {
           }
         }
         audioPlayerReadyRef.current = true;
+      }
+    }
+  };
+
+  // 视频对应音频播放器准备就绪
+  const handleVideoAudioReady = () => {
+    if (videoAudioPlayerRef.current && !videoAudioPlayerReadyRef.current) {
+      const videoAudioInternalPlayer = (videoAudioPlayerRef.current as any).getInternalPlayer();
+      if (videoAudioInternalPlayer) {
+        if (videoAudioInternalPlayer.volume !== undefined) {
+          videoAudioInternalPlayer.volume = 1;
+        }
+        if (videoAudioInternalPlayer.muted !== undefined) {
+          videoAudioInternalPlayer.muted = false;
+        }
+        if (videoAudioInternalPlayer.currentTime !== undefined) {
+          videoAudioInternalPlayer.currentTime = 0;
+        }
+        if (!videoAudioPlayerReadyRef.current && !isVideoAudioPlaying) {
+          if (!videoAudioInternalPlayer.paused) {
+            videoAudioInternalPlayer.pause();
+          }
+        }
+        videoAudioPlayerReadyRef.current = true;
       }
     }
   };
@@ -195,6 +222,16 @@ export default function Page17() {
             });
           }
         }
+        break;
+
+      case 'play-video':
+        // 点击"正确"按钮播放视频（先播放视频，视频结束后再播放音频）
+        const currentState = usePresentationStore.getState();
+        setState({
+          ...currentState,
+          isPlaying: true,
+        });
+        setIsVideoAudioPlaying(false);
         break;
 
       default:
@@ -266,6 +303,19 @@ export default function Page17() {
               ...currentState,
               isPlaying: false,
             });
+            // 视频播放完成后，开始播放音频轨道
+            setIsVideoAudioPlaying(true);
+            if (videoAudioPlayerRef.current) {
+              const videoAudioInternalPlayer = (videoAudioPlayerRef.current as any).getInternalPlayer();
+              if (videoAudioInternalPlayer) {
+                if (videoAudioInternalPlayer.currentTime !== undefined) {
+                  videoAudioInternalPlayer.currentTime = 0;
+                }
+                videoAudioInternalPlayer.play().catch((error: any) => {
+                  console.log('视频音频播放失败:', error);
+                });
+              }
+            }
           }}
           style={{
             position: 'absolute',
@@ -301,6 +351,27 @@ export default function Page17() {
           width="1px"
           height="1px"
           onReady={handleAudioReady}
+        />
+      </div>
+      {/* 视频对应音频播放器 */}
+      <div style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}>
+        <ReactPlayer
+          ref={videoAudioPlayerRef}
+          url="/assets/videos/见面握握手第二句.mp4"
+          playing={isVideoAudioPlaying}
+          loop={false}
+          muted={false}
+          controls={false}
+          width="1px"
+          height="1px"
+          onReady={handleVideoAudioReady}
+          config={{
+            file: {
+              attributes: {
+                muted: false,
+              },
+            },
+          }}
         />
       </div>
     </div>

@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import ReactPlayer from 'react-player';
+import { usePageControl } from '@/hooks/usePageControl';
 
 interface Note {
   osc: OscillatorNode;
@@ -13,16 +15,21 @@ export default function Page18() {
   const activeNotesRef = useRef<Record<string, Note>>({});
   const pressTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const audioPlayerRef = useRef<ReactPlayer>(null);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
+  // 大二度（全音）的频率比：2^(2/12) = 2^(1/6)
+  const majorSecondRatio = Math.pow(2, 2/12);
+  
   const noteFrequencies: Record<string, number> = {
-    Bb3: 233.08,
-    C4: 261.63,
-    D4: 293.66,
-    Eb4: 311.13,
-    F4: 349.23,
-    G4: 392.0,
-    A4: 440.0,
-    Bb4: 466.16,
+    Bb3: 233.08 * majorSecondRatio,  // 升高一个大二度
+    C4: 261.63 * majorSecondRatio,   // 升高一个大二度
+    D4: 293.66 * majorSecondRatio,   // 升高一个大二度
+    Eb4: 311.13 * majorSecondRatio,  // 升高一个大二度
+    F4: 349.23 * majorSecondRatio,   // 升高一个大二度
+    G4: 392.0 * majorSecondRatio,    // 升高一个大二度
+    A4: 440.0 * majorSecondRatio,    // 升高一个大二度
+    Bb4: 466.16 * majorSecondRatio,  // 升高一个大二度
   };
 
   const keys = [
@@ -126,6 +133,75 @@ export default function Page18() {
     }
   };
 
+
+  // 处理页面控制命令
+  const handlePageControl = useCallback((command: { type: string; value?: any }) => {
+    switch (command.type) {
+      case 'play-audio':
+        // 播放完整伴奏
+        setIsAudioPlaying(true);
+        if (audioPlayerRef.current) {
+          const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+          if (audioInternalPlayer) {
+            // 重置到开始位置
+            if (audioInternalPlayer.currentTime !== undefined) {
+              audioInternalPlayer.currentTime = 0;
+            }
+            // 播放
+            audioInternalPlayer.play().catch((error: any) => {
+              console.log('完整伴奏播放失败:', error);
+            });
+          }
+        }
+        break;
+
+      case 'pause-audio':
+        // 暂停完整伴奏
+        setIsAudioPlaying(false);
+        if (audioPlayerRef.current) {
+          const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+          if (audioInternalPlayer && !audioInternalPlayer.paused) {
+            audioInternalPlayer.pause();
+          }
+        }
+        break;
+
+      case 'toggle-audio':
+        // 切换播放/暂停状态
+        if (isAudioPlaying) {
+          setIsAudioPlaying(false);
+          if (audioPlayerRef.current) {
+            const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+            if (audioInternalPlayer && !audioInternalPlayer.paused) {
+              audioInternalPlayer.pause();
+            }
+          }
+        } else {
+          setIsAudioPlaying(true);
+          if (audioPlayerRef.current) {
+            const audioInternalPlayer = (audioPlayerRef.current as any).getInternalPlayer();
+            if (audioInternalPlayer) {
+              // 如果播放器在开始位置或已结束，重置到开始
+              if (audioInternalPlayer.currentTime === 0 || audioInternalPlayer.ended) {
+                if (audioInternalPlayer.currentTime !== undefined) {
+                  audioInternalPlayer.currentTime = 0;
+                }
+              }
+              audioInternalPlayer.play().catch((error: any) => {
+                console.log('完整伴奏播放失败:', error);
+              });
+            }
+          }
+        }
+        break;
+
+      default:
+        break;
+    }
+  }, [isAudioPlaying]);
+
+  // 监听页面控制命令
+  usePageControl(18, handlePageControl);
 
   useEffect(() => {
     return () => {
@@ -310,6 +386,26 @@ export default function Page18() {
             <span className="syllable">{key.syllable}</span>
           </div>
         ))}
+      </div>
+
+      {/* 音频播放器（隐藏） */}
+      <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: 0 }}>
+        <ReactPlayer
+          ref={audioPlayerRef}
+          url="/assets/audios/完整伴奏.mp3"
+          playing={isAudioPlaying}
+          loop={false}
+          controls={false}
+          width="1px"
+          height="1px"
+          config={{
+            file: {
+              attributes: {
+                autoPlay: false,
+              },
+            },
+          }}
+        />
       </div>
     </div>
   );

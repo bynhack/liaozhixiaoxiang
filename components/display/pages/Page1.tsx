@@ -51,42 +51,18 @@ export default function Page1() {
     }
   }, [isPlaying]);
 
-  // 确保视频初始自动播放
-  useEffect(() => {
-    const tryPlay = () => {
-      if (playerRef.current && isPlaying) {
-        const internalPlayer = (playerRef.current as any).getInternalPlayer();
-        if (internalPlayer && internalPlayer.paused) {
-          // 根据音量设置静音状态
-          if (internalPlayer.muted !== undefined) {
-            internalPlayer.muted = volume === 0;
-          }
-          internalPlayer.play().catch((error: any) => {
-            console.log('自动播放失败:', error);
-          });
-        }
-      }
-    };
-
-    // 等待播放器准备好
-    const timer = setTimeout(tryPlay, 300);
-
-    return () => clearTimeout(timer);
-  }, [isPlaying]);
-
-  // 当播放器准备好时也尝试播放
+  // 当播放器准备好时设置音量
   const handleReady = () => {
-    if (playerRef.current && isPlaying) {
+    if (playerRef.current) {
       const internalPlayer = (playerRef.current as any).getInternalPlayer();
-      if (internalPlayer && internalPlayer.paused) {
-        try {
-          // 确保静音
-          if (internalPlayer.muted !== undefined) {
-            internalPlayer.muted = volume === 0;
-          }
-          internalPlayer.play();
-        } catch (error) {
-          console.log('播放失败:', error);
+      if (internalPlayer) {
+        // 设置音量
+        if (internalPlayer.volume !== undefined) {
+          internalPlayer.volume = volume / 100;
+        }
+        // 根据音量设置静音状态
+        if (internalPlayer.muted !== undefined) {
+          internalPlayer.muted = volume === 0;
         }
       }
     }

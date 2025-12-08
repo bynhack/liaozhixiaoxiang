@@ -1,9 +1,131 @@
 'use client';
 
+import { useEffect, useRef, useState, useCallback } from 'react';
+import ReactPlayer from 'react-player';
+import { usePresentationStore } from '@/stores/presentationStore';
+import { usePageControl } from '@/hooks/usePageControl';
+
 export default function Page30() {
+  const playerRef = useRef<ReactPlayer>(null);
+  const { isPlaying, setState } = usePresentationStore((state) => ({
+    isPlaying: state.isPlaying,
+    setState: state.setState,
+  }));
+  const [volume, setVolume] = useState(100); // 0-100，默认100%音量，有声音
+
+  // 响应播放状态变化
+  useEffect(() => {
+    if (playerRef.current) {
+      const internalPlayer = (playerRef.current as any).getInternalPlayer();
+      if (internalPlayer) {
+        // 设置音量
+        if (internalPlayer.volume !== undefined) {
+          internalPlayer.volume = volume / 100;
+        }
+        // 根据音量设置静音状态
+        if (internalPlayer.muted !== undefined) {
+          internalPlayer.muted = volume === 0;
+        }
+        if (isPlaying) {
+          // 播放
+          if (internalPlayer.paused) {
+            internalPlayer.play().catch((error: any) => {
+              console.log('播放失败:', error);
+            });
+          }
+        } else {
+          // 暂停
+          if (!internalPlayer.paused) {
+            internalPlayer.pause();
+          }
+        }
+      }
+    }
+  }, [isPlaying, volume]);
+
+  // 当播放器准备好时设置音量
+  const handleReady = () => {
+    if (playerRef.current) {
+      const internalPlayer = (playerRef.current as any).getInternalPlayer();
+      if (internalPlayer) {
+        // 设置音量
+        if (internalPlayer.volume !== undefined) {
+          internalPlayer.volume = volume / 100;
+        }
+        // 根据音量设置静音状态
+        if (internalPlayer.muted !== undefined) {
+          internalPlayer.muted = volume === 0;
+        }
+      }
+    }
+  };
+
+  // 处理页面控制命令
+  const handlePageControl = useCallback((command: { type: string; value?: any }) => {
+    switch (command.type) {
+      case 'play-video':
+        // 播放视频
+        const currentState = usePresentationStore.getState();
+        setState({
+          ...currentState,
+          isPlaying: true,
+        });
+        break;
+
+      case 'volume':
+        if (playerRef.current) {
+          const internalPlayer = (playerRef.current as any).getInternalPlayer();
+          if (internalPlayer) {
+            const newVolume = command.value as number;
+            setVolume(newVolume);
+            if (internalPlayer.volume !== undefined) {
+              internalPlayer.volume = newVolume / 100;
+            }
+            if (internalPlayer.muted !== undefined) {
+              internalPlayer.muted = newVolume === 0;
+            }
+          }
+        }
+        break;
+
+      case 'seek':
+        if (playerRef.current) {
+          const internalPlayer = (playerRef.current as any).getInternalPlayer();
+          if (internalPlayer) {
+            const seconds = command.value as number;
+            if (internalPlayer.currentTime !== undefined) {
+              internalPlayer.currentTime = seconds;
+            }
+          }
+        }
+        break;
+
+      default:
+        break;
+    }
+  }, [setState]);
+
+  // 监听页面控制命令
+  usePageControl(30, handlePageControl);
+
+  // 更新视频音量
+  useEffect(() => {
+    if (playerRef.current) {
+      const internalPlayer = (playerRef.current as any).getInternalPlayer();
+      if (internalPlayer) {
+        if (internalPlayer.volume !== undefined) {
+          internalPlayer.volume = volume / 100;
+        }
+        if (internalPlayer.muted !== undefined) {
+          internalPlayer.muted = volume === 0;
+        }
+      }
+    }
+  }, [volume]);
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      {/* 背景图片层 */}
+      {/* 背景视频层 */}
       <div
         style={{
           position: 'absolute',
@@ -14,13 +136,44 @@ export default function Page30() {
           zIndex: 1,
         }}
       >
-        <img
-          src="/assets/images/page-30.png"
-          alt="Page 30"
+        <ReactPlayer
+          ref={playerRef}
+          url="/assets/videos/想一想转场.mp4"
+          playing={isPlaying}
+          loop={false}
+          muted={volume === 0}
+          controls={false}
+          width="100%"
+          height="100%"
+          playsinline={true}
+          onReady={handleReady}
+          onEnded={() => {
+            // 视频播放完成后自动停止
+            const currentState = usePresentationStore.getState();
+            setState({
+              ...currentState,
+              isPlaying: false,
+            });
+          }}
           style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+          }}
+          config={{
+            file: {
+              attributes: {
+                autoPlay: false,
+                muted: volume === 0,
+                loop: false,
+                playsInline: true,
+                style: {
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                },
+              },
+            },
           }}
         />
       </div>

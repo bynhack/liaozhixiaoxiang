@@ -18,8 +18,8 @@ let currentState = {
 
 // 根据页面ID判断是否应该自动播放
 const shouldAutoPlay = (slideId: number): boolean => {
-  // 第1页、第3-6页和28-29页、31页自动播放，第2页和第10-17页不自动播放，其他页面（图片等）不自动播放
-  return slideId === 1 || (slideId >= 3 && slideId <= 6) || (slideId >= 28 && slideId <= 29) || slideId === 31;
+  // 第1页、第3-6页、第8页和28-29页、31页自动播放，第2页和第10-17页不自动播放，其他页面（图片等）不自动播放
+  return slideId === 1 || (slideId >= 3 && slideId <= 6) || slideId === 8 || (slideId >= 28 && slideId <= 29) || slideId === 31;
 };
 
 export function setupSocket(io: SocketServer) {
@@ -55,8 +55,8 @@ export function setupSocket(io: SocketServer) {
 
     // 根据页面ID判断是否应该自动播放
     const shouldAutoPlay = (slideId: number): boolean => {
-      // 第1页、第3-6页和28-29页、31页自动播放，第2页和第10-17页不自动播放，其他页面（图片等）不自动播放
-      return slideId === 1 || (slideId >= 3 && slideId <= 6) || (slideId >= 28 && slideId <= 29) || slideId === 31;
+      // 第1页、第3-6页、第8页和28-29页、31页自动播放，第2页和第10-17页不自动播放，其他页面（图片等）不自动播放
+      return slideId === 1 || (slideId >= 3 && slideId <= 6) || slideId === 8 || (slideId >= 28 && slideId <= 29) || slideId === 31;
     };
 
     // 控制端：切换幻灯片

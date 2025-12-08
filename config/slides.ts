@@ -24,7 +24,7 @@ export const defaultSlides: Slide[] = [
     id: 4,
     type: 'video',
     url: '/assets/videos/page-4.mp4',
-    title: '学唱',
+    title: '演一演',
   },
   {
     id: 5,
@@ -87,28 +87,10 @@ export const defaultSlides: Slide[] = [
     title: '歌词4',
   },
   {
-    id: 14,
+    id: 36,
     type: 'video',
-    url: '/assets/videos/page-14.mp4',
-    title: '歌词5',
-  },
-  {
-    id: 15,
-    type: 'video',
-    url: '/assets/videos/page-15.mp4',
-    title: '歌词6',
-  },
-  {
-    id: 16,
-    type: 'video',
-    url: '/assets/videos/page-16.mp4',
-    title: '歌词7',
-  },
-  {
-    id: 17,
-    type: 'video',
-    url: '/assets/videos/page-17.mp4',
-    title: '歌词8',
+    url: '/assets/videos/文生图第二段.mp4',
+    title: '文生图第二段',
   },
   {
     id: 18,
@@ -184,8 +166,8 @@ export const defaultSlides: Slide[] = [
   },
   {
     id: 30,
-    type: 'image',
-    url: '/assets/images/page-30.png',
+    type: 'video',
+    url: '/assets/videos/想一想转场.mp4',
     title: '想一想',
   },
   {

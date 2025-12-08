@@ -489,17 +489,9 @@ export default function Page20() {
 
 
 
-  // 第二十页加载时，确保为暂停状态（不自动播放）并初始化旋律曲线 - 只运行一次
+  // 第二十页加载时，初始化旋律曲线 - 只运行一次
   useEffect(() => {
     if (hasInitialized.current) return;
-
-    const currentState = usePresentationStore.getState();
-    if (currentState.isPlaying) {
-      setState({
-        ...currentState,
-        isPlaying: false,
-      });
-    }
 
     // 等待一小段时间确保 canvas 元素已挂载
     setTimeout(() => {
@@ -508,7 +500,7 @@ export default function Page20() {
     }, 200);
 
     hasInitialized.current = true;
-  }, [calculateNotes, drawMelodyCurve, setState]);
+  }, [calculateNotes, drawMelodyCurve]);
 
   // 响应播放状态变化
   useEffect(() => {
@@ -564,12 +556,12 @@ export default function Page20() {
     }
   }, [isPlaying, volume, audioVolume]);
 
-  // 当播放器准备好时设置音量并停留在第一帧（不自动播放）
+  // 当播放器准备好时设置音量
   const handleReady = () => {
-    if (playerRef.current && !playerReadyRef.current) {
+    if (playerRef.current) {
       const internalPlayer = (playerRef.current as any).getInternalPlayer();
       if (internalPlayer) {
-        // 设置初始音量
+        // 设置音量
         if (internalPlayer.volume !== undefined) {
           internalPlayer.volume = volume / 100;
         }
@@ -577,17 +569,6 @@ export default function Page20() {
         if (internalPlayer.muted !== undefined) {
           internalPlayer.muted = volume === 0;
         }
-        // 确保停留在第一帧
-        if (internalPlayer.currentTime !== undefined) {
-          internalPlayer.currentTime = 0;
-        }
-        // 只在首次加载时确保暂停状态，之后由 isPlaying 状态控制
-        if (!playerReadyRef.current && !isPlaying) {
-          if (!internalPlayer.paused) {
-            internalPlayer.pause();
-          }
-        }
-        playerReadyRef.current = true;
       }
     }
   };

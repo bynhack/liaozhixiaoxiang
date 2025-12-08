@@ -12,22 +12,6 @@ export default function Page2() {
     setState: state.setState,
   }));
   const [volume, setVolume] = useState(0); // 0-100，0表示静音
-  const hasInitialized = useRef(false);
-
-  // 第二页加载时，确保为暂停状态（不自动播放）- 只运行一次
-  useEffect(() => {
-    if (hasInitialized.current) return;
-    
-    const currentState = usePresentationStore.getState();
-    if (currentState.isPlaying) {
-      setState({
-        ...currentState,
-        isPlaying: false,
-      });
-    }
-    hasInitialized.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 空依赖数组，只在组件挂载时运行一次
 
   // 响应播放状态变化
   useEffect(() => {
@@ -59,14 +43,12 @@ export default function Page2() {
     }
   }, [isPlaying, volume]);
 
-  const playerReadyRef = useRef(false);
-
-  // 当播放器准备好时设置音量并停留在第一帧（不自动播放）
+  // 当播放器准备好时设置音量
   const handleReady = () => {
-    if (playerRef.current && !playerReadyRef.current) {
+    if (playerRef.current) {
       const internalPlayer = (playerRef.current as any).getInternalPlayer();
       if (internalPlayer) {
-        // 设置初始音量
+        // 设置音量
         if (internalPlayer.volume !== undefined) {
           internalPlayer.volume = volume / 100;
         }
@@ -74,17 +56,6 @@ export default function Page2() {
         if (internalPlayer.muted !== undefined) {
           internalPlayer.muted = volume === 0;
         }
-        // 确保停留在第一帧
-        if (internalPlayer.currentTime !== undefined) {
-          internalPlayer.currentTime = 0;
-        }
-        // 只在首次加载时确保暂停状态，之后由 isPlaying 状态控制
-        if (!playerReadyRef.current && !isPlaying) {
-          if (!internalPlayer.paused) {
-            internalPlayer.pause();
-          }
-        }
-        playerReadyRef.current = true;
       }
     }
   };

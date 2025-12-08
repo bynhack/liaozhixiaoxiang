@@ -11,8 +11,7 @@ export default function Page3() {
     isPlaying: state.isPlaying,
     setState: state.setState,
   }));
-  const [volume, setVolume] = useState(50); // 0-100，第三页默认50%音量，有声音
-  const hasTriedAutoplayRef = useRef(false); // 是否已经尝试过自动播放
+  const [volume, setVolume] = useState(100); // 0-100，第三页默认100%音量，有声音
 
   // 第三页加载时，自动设置为播放状态
   useEffect(() => {
@@ -55,77 +54,19 @@ export default function Page3() {
     }
   }, [isPlaying, volume]);
 
-  // 确保视频初始自动播放（先静音播放，成功后再取消静音）
-  useEffect(() => {
-    const tryPlay = () => {
-      if (playerRef.current && isPlaying && !hasTriedAutoplayRef.current) {
-        const internalPlayer = (playerRef.current as any).getInternalPlayer();
-        if (internalPlayer && internalPlayer.paused) {
-          // 先尝试静音播放（浏览器允许静音视频自动播放）
-          const originalMuted = internalPlayer.muted;
-          internalPlayer.muted = true;
-          
-          internalPlayer.play()
-            .then(() => {
-              // 播放成功后，延迟一小段时间再取消静音
-              setTimeout(() => {
-                if (internalPlayer && !internalPlayer.paused) {
-                  // 设置音量
-                  if (internalPlayer.volume !== undefined) {
-                    internalPlayer.volume = volume / 100;
-                  }
-                  // 取消静音（根据音量设置）
-                  internalPlayer.muted = volume === 0;
-                  hasTriedAutoplayRef.current = true;
-                }
-              }, 200);
-            })
-            .catch((error: any) => {
-              console.log('自动播放失败:', error);
-              // 恢复原始静音状态
-              internalPlayer.muted = originalMuted;
-              hasTriedAutoplayRef.current = true;
-            });
-        }
-      }
-    };
-
-    // 等待播放器准备好
-    const timer = setTimeout(tryPlay, 300);
-
-    return () => clearTimeout(timer);
-  }, [isPlaying, volume]);
-
-  // 当播放器准备好时也尝试播放（先静音播放，成功后再取消静音）
+  // 当播放器准备好时设置音量
   const handleReady = () => {
-    if (playerRef.current && isPlaying && !hasTriedAutoplayRef.current) {
+    if (playerRef.current) {
       const internalPlayer = (playerRef.current as any).getInternalPlayer();
-      if (internalPlayer && internalPlayer.paused) {
-        // 先尝试静音播放（浏览器允许静音视频自动播放）
-        const originalMuted = internalPlayer.muted;
-        internalPlayer.muted = true;
-        
-        internalPlayer.play()
-          .then(() => {
-            // 播放成功后，延迟一小段时间再取消静音
-            setTimeout(() => {
-              if (internalPlayer && !internalPlayer.paused) {
-                // 设置音量
-                if (internalPlayer.volume !== undefined) {
-                  internalPlayer.volume = volume / 100;
-                }
-                // 取消静音（根据音量设置）
-                internalPlayer.muted = volume === 0;
-                hasTriedAutoplayRef.current = true;
-              }
-            }, 200);
-          })
-          .catch((error: any) => {
-            console.log('播放失败:', error);
-            // 恢复原始静音状态
-            internalPlayer.muted = originalMuted;
-            hasTriedAutoplayRef.current = true;
-          });
+      if (internalPlayer) {
+        // 设置音量
+        if (internalPlayer.volume !== undefined) {
+          internalPlayer.volume = volume / 100;
+        }
+        // 根据音量设置静音状态
+        if (internalPlayer.muted !== undefined) {
+          internalPlayer.muted = volume === 0;
+        }
       }
     }
   };
