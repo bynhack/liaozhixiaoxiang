@@ -7,6 +7,7 @@ import Page4Controls from './page-controls/Page4Controls';
 import Page6Controls from './page-controls/Page6Controls';
 import Page7Controls from './page-controls/Page7Controls';
 import Page8Controls from './page-controls/Page8Controls';
+import Page9Controls from './page-controls/Page9Controls';
 import Page10Controls from './page-controls/Page10Controls';
 import Page11Controls from './page-controls/Page11Controls';
 import Page12Controls from './page-controls/Page12Controls';
@@ -47,6 +48,7 @@ const pageControlComponents: Record<number, React.ComponentType> = {
   6: Page6Controls,
   7: Page7Controls,
   8: Page8Controls,
+  9: Page9Controls,
   10: Page10Controls,
   11: Page11Controls,
   12: Page12Controls,
