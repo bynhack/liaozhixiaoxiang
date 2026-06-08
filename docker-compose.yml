@@ -6,8 +6,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: liaozhixiaoxiang
-    ports:
-      - "3000:3000"
     volumes:
       # 挂载代码目录，支持热重载（开发模式）
       - .:/app
